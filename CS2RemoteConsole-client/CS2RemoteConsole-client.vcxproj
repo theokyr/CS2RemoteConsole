@@ -155,10 +155,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="config.cpp" />
+    <ClCompile Include="connection_cs2console.cpp" />
+    <ClCompile Include="connection_remoteserver.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="main.h" />
+    <ClInclude Include="connection_cs2console.h" />
+    <ClInclude Include="connection_remoteserver.h" />
     <ClInclude Include="payloads.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
