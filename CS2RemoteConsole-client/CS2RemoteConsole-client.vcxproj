@@ -158,6 +158,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="payloads.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
