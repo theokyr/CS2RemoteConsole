@@ -72,6 +72,31 @@ Edit `config.ini` to customize:
    ```
 3. The compiled server executable will be named `server`
 
+### Server (Docker)
+You can build and run the server using Docker, which works on both Windows and Linux:
+
+1. Ensure you have Docker and Docker Compose installed on your system.
+2. Navigate to the `docker` directory in the project:
+   ```
+   cd docker
+   ```
+3. Build the Docker image:
+   ```
+   docker-compose build
+   ```
+4. Run the server in a container:
+   ```
+   docker-compose up
+   ```
+   Or, to run it in detached mode:
+   ```
+   docker-compose up -d
+   ```
+5. To stop the server:
+   ```
+   docker-compose down
+   ```
+
 ## Notes
 
 - Ensure CS2 is running in `-tools` mode

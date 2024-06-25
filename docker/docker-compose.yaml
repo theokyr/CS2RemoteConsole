@@ -1,0 +1,14 @@
+﻿version: '3.8'
+
+name: cs2remoteconsole-server
+
+services:
+  cs2remoteconsole-server:
+    build:
+      context: ../CS2RemoteConsole-server/
+      dockerfile: ../docker/Dockerfile
+    ports:
+      - "42069:42069"
+    stdin_open: true  # Keep STDIN open
+    tty: true         # Allocate a pseudo-TTY
+    restart: unless-stopped
