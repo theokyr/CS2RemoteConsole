@@ -125,40 +125,59 @@ void userInputHandler()
     while (running)
     {
         std::cout << ">> ";
-        char input;
-        std::cin >> input;
+        std::string input;
+        std::getline(std::cin, input);
 
-        switch (input)
+        if (input.empty()) continue;
+
+        if (input.substr(0, 3) == "cmd")
         {
-        case '0':
-            sendPayload(command_smooth_disable_payload);
-            std::cout << "Sent smooth disable command" << std::endl;
-            break;
-        case '1':
-            sendPayload(command_smooth_enable_payload);
-            std::cout << "Sent smooth enable command" << std::endl;
-            break;
-        case 'y':
-            if (!listening)
+            if (input.length() > 4)
             {
-                listening = true;
-                listenerThread = std::thread(listenForData);
-                std::cout << "Started console output listening thread" << std::endl;
+                std::string command = input.substr(4);
+                auto payload = create_command_payload(command);
+                sendPayload(payload);
+                std::cout << "Sent command: " << command << std::endl;
             }
             else
             {
-                listening = false;
-                if (listenerThread.joinable()) listenerThread.join();
-                std::cout << "Stopped console output listening thread" << std::endl;
+                std::cout << "Invalid command format. Use 'cmd <your_command>'" << std::endl;
             }
-            break;
-        case 'x':
-            running = false;
-            listening = false;
-            return;
-        default:
-            std::cout << "Unknown command" << std::endl;
-            break;
+        }
+        else
+        {
+            switch (input[0])
+            {
+            case '0':
+                sendPayload(command_smooth_disable_payload);
+                std::cout << "Sent smooth disable command" << std::endl;
+                break;
+            case '1':
+                sendPayload(command_smooth_enable_payload);
+                std::cout << "Sent smooth enable command" << std::endl;
+                break;
+            case 'y':
+                if (!listening)
+                {
+                    listening = true;
+                    listenerThread = std::thread(listenForData);
+                    std::cout << "Started console output listening thread" << std::endl;
+                }
+                else
+                {
+                    listening = false;
+                    if (listenerThread.joinable()) listenerThread.join();
+                    std::cout << "Stopped console output listening thread" << std::endl;
+                }
+                break;
+            case 'x':
+                running = false;
+                listening = false;
+                return;
+            default:
+                std::cout << "Unknown command" << std::endl;
+                break;
+            }
         }
     }
 }
