@@ -1,5 +1,6 @@
 ﻿#include "utils.h"
 
+
 std::vector<unsigned char> create_command_payload(const std::string& command)
 {
     std::vector<unsigned char> payload = {'C', 'M', 'N', 'D', 0x00, 0xD4, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00};
@@ -15,4 +16,14 @@ std::vector<unsigned char> create_command_payload(const std::string& command)
     payload[9] = total_length & 0xFF;
 
     return payload;
+}
+
+std::string getCurrentDirectory()
+{
+    char buffer[FILENAME_MAX];
+    if (_getcwd(buffer, FILENAME_MAX) != nullptr)
+    {
+        return std::string(buffer);
+    }
+    return "";
 }

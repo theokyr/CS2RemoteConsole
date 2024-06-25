@@ -4,7 +4,11 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <string>
+#include <vector>
 #include "payloads.h"
+#include "config.h"
+#include "utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -20,10 +24,41 @@ void sendSanityCheck();
 int sendPayload(const std::vector<unsigned char>& payload);
 bool connectToServer(const char* ip, int port);
 
+
 int main()
 {
-    const char* ip = "127.0.0.1";
-    const int port = 29000;
+    std::vector<std::string> config_paths = {
+        "config.ini",
+        getCurrentDirectory() + "\\config.ini"
+    };
+
+    bool config_loaded = false;
+    for (const auto& path : config_paths)
+    {
+        try
+        {
+            std::cout << "Attempting to load config from: " << path << std::endl;
+            Config::getInstance().load(path);
+            std::cout << "Config loaded successfully from: " << path << std::endl;
+            config_loaded = true;
+            break;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Failed to load config from " << path << ": " << e.what() << std::endl;
+        }
+    }
+
+    if (!config_loaded)
+    {
+        std::cerr << "Failed to load config from any location. Exiting." << std::endl;
+        return 1;
+    }
+
+    const std::string ip = Config::getInstance().get("cs2_console_ip", "127.0.0.1");
+    const int port = Config::getInstance().getInt("cs2_console_port", 29000);
+
+    std::cout << "Using server IP: " << ip << " and port: " << port << std::endl;
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -32,7 +67,7 @@ int main()
         return 1;
     }
 
-    if (!connectToServer(ip, port))
+    if (!connectToServer(ip.c_str(), port))
     {
         WSACleanup();
         return 1;
@@ -51,6 +86,8 @@ int main()
 
 bool connectToServer(const char* ip, int port)
 {
+    const int cs2_console_reconnect_delay = Config::getInstance().getInt("cs2_console_reconnect_delay", 5000);
+
     while (true)
     {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -67,13 +104,13 @@ bool connectToServer(const char* ip, int port)
 
         if (connect(sock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
         {
-            std::cerr << "Connection failed. Retrying in 5 seconds..." << std::endl;
+            std::cerr << "Connection failed. Retrying in " << cs2_console_reconnect_delay / 1000 << " seconds..." << std::endl;
             closesocket(sock);
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(cs2_console_reconnect_delay));
         }
         else
         {
-            std::cout << "Connected to server on port " << port << std::endl;
+            std::cout << "Connected to server " << ip << " on port " << port << std::endl;
             return true;
         }
     }
