@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole", "CS2RemoteConsole\CS2RemoteConsole.vcxproj", "{939729FC-50C7-4FDD-816F-B108642A9B88}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole-client", "CS2RemoteConsole-client\CS2RemoteConsole-client.vcxproj", "{939729FC-50C7-4FDD-816F-B108642A9B88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

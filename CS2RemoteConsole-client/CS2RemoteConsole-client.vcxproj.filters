@@ -15,8 +15,5 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CS2RemoteConsole.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
