@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{939729FC-50C7-4FDD-816F-B108642A9B88}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>CS2BlindtestHelper</RootNamespace>
+    <RootNamespace>CS2RemoteConsole</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

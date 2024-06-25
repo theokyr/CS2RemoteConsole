@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CS2BlindtestHelper.cpp">
+    <ClCompile Include="CS2RemoteConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
