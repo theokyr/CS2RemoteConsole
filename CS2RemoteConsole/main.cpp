@@ -5,7 +5,6 @@
 #include <atomic>
 #include <chrono>
 #include "payloads.h"
-#include "utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -18,10 +17,13 @@ std::thread sanityCheckThread;
 void listenForData();
 void userInputHandler();
 void sendSanityCheck();
+int sendPayload(const std::vector<unsigned char>& payload);
+bool connectToServer(const char* ip, int port);
 
 int main()
 {
-    const int dest_port = 29000;
+    const char* ip = "127.0.0.1";
+    const int port = 29000;
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -30,54 +32,60 @@ int main()
         return 1;
     }
 
+    if (!connectToServer(ip, port))
+    {
+        WSACleanup();
+        return 1;
+    }
+
+    sanityCheckThread = std::thread(sendSanityCheck);
+    userInputHandler();
+
+    running = false;
+    if (sanityCheckThread.joinable()) sanityCheckThread.join();
+    if (listenerThread.joinable()) listenerThread.join();
+    closesocket(sock);
+    WSACleanup();
+    return 0;
+}
+
+bool connectToServer(const char* ip, int port)
+{
     while (true)
     {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
         {
             std::cerr << "Failed to create socket: " << WSAGetLastError() << std::endl;
-            WSACleanup();
-            return 1;
+            return false;
         }
 
-        sockaddr_in server_addr;
+        sockaddr_in server_addr{};
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(dest_port);
-        inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+        server_addr.sin_port = htons(port);
+        inet_pton(AF_INET, ip, &server_addr.sin_addr);
 
         if (connect(sock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
         {
-            std::cerr << "Connection failed with error: " << WSAGetLastError() << ". Retrying in 5 seconds..." << std::endl;
+            std::cerr << "Connection failed. Retrying in 5 seconds..." << std::endl;
             closesocket(sock);
             std::this_thread::sleep_for(std::chrono::seconds(5));
-            continue;
         }
         else
         {
-            std::cout << "Connected to server on port " << dest_port << std::endl;
-            break;
+            std::cout << "Connected to server on port " << port << std::endl;
+            return true;
         }
     }
+}
 
-    // Start the sanity check thread
-    sanityCheckThread = std::thread(sendSanityCheck);
-
-    // Start the user input handler thread
-    std::thread inputThread(userInputHandler);
-    inputThread.join();
-
-    // Clean up
-    running = false;
-    if (sanityCheckThread.joinable())
+int sendPayload(const std::vector<unsigned char>& payload)
+{
+    if (send(sock, reinterpret_cast<const char*>(payload.data()), static_cast<int>(payload.size()), 0) == SOCKET_ERROR)
     {
-        sanityCheckThread.join();
+        std::cerr << "Failed to send data" << std::endl;
+        return 1;
     }
-    if (listenerThread.joinable())
-    {
-        listenerThread.join();
-    }
-    closesocket(sock);
-    WSACleanup();
     return 0;
 }
 
@@ -85,12 +93,15 @@ void listenForData()
 {
     char buffer[1024];
     int bytesReceived;
+    u_long mode = 1; // Set non-blocking mode
+    ioctlsocket(sock, FIONBIO, &mode);
+
     while (listening)
     {
         bytesReceived = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (bytesReceived > 0)
         {
-            buffer[bytesReceived] = '\0'; // Null-terminate the received data
+            buffer[bytesReceived] = '\0';
             std::cout << "\nReceived: " << buffer << std::endl << ">> ";
         }
         else if (bytesReceived == 0)
@@ -99,17 +110,13 @@ void listenForData()
             listening = false;
             running = false;
         }
-        else
+        else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
-            if (WSAGetLastError() != WSAEWOULDBLOCK)
-            {
-                // Ignore non-blocking mode error
-                std::cerr << "recv failed: " << WSAGetLastError() << std::endl;
-                listening = false;
-                running = false;
-            }
+            std::cerr << "recv failed: " << WSAGetLastError() << std::endl;
+            listening = false;
+            running = false;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Small sleep to avoid busy-waiting
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -124,11 +131,11 @@ void userInputHandler()
         switch (input)
         {
         case '0':
-            send_payload(sock, command_smooth_disable_payload);
+            sendPayload(command_smooth_disable_payload);
             std::cout << "Sent smooth disable command" << std::endl;
             break;
         case '1':
-            send_payload(sock, command_smooth_enable_payload);
+            sendPayload(command_smooth_enable_payload);
             std::cout << "Sent smooth enable command" << std::endl;
             break;
         case 'y':
@@ -141,21 +148,13 @@ void userInputHandler()
             else
             {
                 listening = false;
-                if (listenerThread.joinable())
-                {
-                    listenerThread.join();
-                }
+                if (listenerThread.joinable()) listenerThread.join();
                 std::cout << "Stopped console output listening thread" << std::endl;
             }
             break;
         case 'x':
             running = false;
             listening = false;
-            if (listenerThread.joinable())
-            {
-                listenerThread.join();
-            }
-            std::cout << "Exiting program..." << std::endl;
             return;
         default:
             std::cout << "Unknown command" << std::endl;
@@ -171,8 +170,7 @@ void sendSanityCheck()
         std::this_thread::sleep_for(std::chrono::seconds(5));
         if (running)
         {
-            // Check again to avoid sending after program is supposed to stop
-            send_payload(sock, command_say_sanity_check_payload);
+            sendPayload(command_say_sanity_check_payload);
             std::cout << "Sent sanity check command" << std::endl;
         }
     }
