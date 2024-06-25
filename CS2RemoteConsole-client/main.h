@@ -1,16 +1,17 @@
 ﻿#ifndef MAIN_H
 #define MAIN_H
 
-#include <iostream>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <thread>
 #include <atomic>
 #include <chrono>
+#include <csignal>
+#include <iostream>
 #include <string>
+#include <thread>
 #include <vector>
-#include "payloads.h"
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include "config.h"
+#include "payloads.h"
 #include "utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
@@ -29,5 +30,6 @@ int sendPayload(const std::vector<unsigned char>& payload);
 void listenForData();
 void userInputHandler();
 void sendSanityCheck();
+void gracefulShutdown();
 
 #endif // MAIN_H

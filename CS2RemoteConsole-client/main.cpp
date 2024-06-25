@@ -7,6 +7,12 @@ std::atomic<bool> listening(false);
 std::thread listenerThread;
 std::thread sanityCheckThread;
 
+void signalHandler(int signum)
+{
+    std::cout << "\nInterrupt signal (" << signum << ") received.\n";
+    running = false;
+}
+
 bool setupConfig()
 {
     std::vector<std::string> config_paths = {
@@ -50,8 +56,48 @@ void cleanupWinsock()
     WSACleanup();
 }
 
+void gracefulShutdown()
+{
+    std::cout << "Initiating graceful shutdown..." << '\n';
+
+    // Stop all threads
+    running = false;
+    listening = false;
+
+    // Wait for sanity check thread to finish
+    if (sanityCheckThread.joinable())
+    {
+        std::cout << "Waiting for sanity check thread to finish..." << '\n';
+        sanityCheckThread.join();
+    }
+
+    // Stop listening thread
+    if (listenerThread.joinable())
+    {
+        std::cout << "Stopping listener thread..." << '\n';
+        listenerThread.join();
+    }
+
+    // Close the socket
+    if (sock != INVALID_SOCKET)
+    {
+        std::cout << "Closing socket..." << '\n';
+        closesocket(sock);
+        sock = INVALID_SOCKET;
+    }
+
+    // Cleanup Winsock
+    std::cout << "Cleaning up Winsock..." << '\n';
+    WSACleanup();
+
+    std::cout << "Graceful shutdown complete." << '\n';
+}
+
 int main()
 {
+    // Register signal handler for CTRL-C
+    signal(SIGINT, signalHandler);
+
     if (!setupConfig() || !setupWinsock())
     {
         return 1;
@@ -77,11 +123,7 @@ int main()
 
     userInputHandler();
 
-    running = false;
-    if (debug_sanity && sanityCheckThread.joinable()) sanityCheckThread.join();
-    if (listenerThread.joinable()) listenerThread.join();
-
-    cleanupWinsock();
+    gracefulShutdown();
     return 0;
 }
 
@@ -89,7 +131,7 @@ bool connectToServer(const char* ip, int port)
 {
     const int cs2_console_reconnect_delay = Config::getInstance().getInt("cs2_console_reconnect_delay", 5000);
 
-    while (true)
+    while (running)
     {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
@@ -114,7 +156,14 @@ bool connectToServer(const char* ip, int port)
             std::cout << "Connected to server " << ip << " on port " << port << '\n';
             return true;
         }
+
+        if (!running)
+        {
+            std::cout << "Stopping connection attempts due to shutdown request." << '\n';
+            return false;
+        }
     }
+    return false;
 }
 
 int sendPayload(const std::vector<unsigned char>& payload)
@@ -134,7 +183,7 @@ void listenForData()
     u_long mode = 1; // Set non-blocking mode
     ioctlsocket(sock, FIONBIO, &mode);
 
-    while (listening)
+    while (listening && running)
     {
         bytesReceived = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (bytesReceived > 0)
@@ -145,17 +194,16 @@ void listenForData()
         else if (bytesReceived == 0)
         {
             std::cout << "\nConnection closed by server" << '\n';
-            listening = false;
-            running = false;
+            break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
             std::cerr << "recv failed: " << WSAGetLastError() << '\n';
-            listening = false;
-            running = false;
+            break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    std::cout << "Listener thread stopping..." << '\n';
 }
 
 void userInputHandler()
@@ -167,6 +215,13 @@ void userInputHandler()
         std::getline(std::cin, input);
 
         if (input.empty()) continue;
+
+        if (input == "quit" || input == "exit" || input == "x")
+        {
+            std::cout << "Exit command received. Initiating shutdown..." << '\n';
+            running = false;
+            break;
+        }
 
         if (input.substr(0, 3) == "cmd")
         {
@@ -208,10 +263,6 @@ void userInputHandler()
                     std::cout << "Stopped console output listening thread" << '\n';
                 }
                 break;
-            case 'x':
-                running = false;
-                listening = false;
-                return;
             default:
                 std::cout << "Unknown command" << '\n';
                 break;
@@ -231,4 +282,5 @@ void sendSanityCheck()
             std::cout << "Sent sanity check command" << '\n';
         }
     }
+    std::cout << "Sanity check thread stopping..." << '\n';
 }
