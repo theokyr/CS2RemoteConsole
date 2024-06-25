@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole-client", "CS2RemoteConsole-client\CS2RemoteConsole-client.vcxproj", "{939729FC-50C7-4FDD-816F-B108642A9B88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole-server", "CS2RemoteConsole-server\CS2RemoteConsole-server.vcxproj", "{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -18,5 +20,13 @@ Global
 		{939729FC-50C7-4FDD-816F-B108642A9B88}.Release|Win32.Build.0 = Release|Win32
 		{939729FC-50C7-4FDD-816F-B108642A9B88}.Release|x64.ActiveCfg = Release|x64
 		{939729FC-50C7-4FDD-816F-B108642A9B88}.Release|x64.Build.0 = Release|x64
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Debug|Win32.Build.0 = Debug|Win32
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Debug|x64.ActiveCfg = Debug|x64
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Debug|x64.Build.0 = Debug|x64
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|Win32.ActiveCfg = Release|Win32
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|Win32.Build.0 = Release|Win32
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|x64.ActiveCfg = Release|x64
+		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal
