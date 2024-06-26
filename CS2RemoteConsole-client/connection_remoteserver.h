@@ -5,6 +5,7 @@
 #include <ws2tcpip.h>
 #include <atomic>
 #include <thread>
+#include "connection_cs2console.h"
 #include "config.h"
 
 #pragma comment(lib, "ws2_32.lib")

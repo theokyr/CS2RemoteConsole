@@ -1,5 +1,5 @@
 ﻿#include "connection_remoteserver.h"
-#include "connection_cs2console.h"
+#include "connection_RemoteServer.h"
 #include "payloads.h"
 #include <iostream>
 #include <ws2tcpip.h>
@@ -18,7 +18,7 @@ bool connectToRemoteServer()
     remoteServerSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remoteServerSock == INVALID_SOCKET)
     {
-        std::cerr << "Failed to create socket for remote server: " << WSAGetLastError() << '\n';
+        std::cerr << "[Connection] [RemoteServer] Failed to create socket for remote server: " << WSAGetLastError() << '\n';
         return false;
     }
 
@@ -29,13 +29,13 @@ bool connectToRemoteServer()
 
     if (connect(remoteServerSock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
     {
-        std::cerr << "Connection to remote server failed: " << WSAGetLastError() << '\n';
+        std::cerr << "[Connection] [RemoteServer] Connection to remote server failed: " << WSAGetLastError() << '\n';
         closesocket(remoteServerSock);
         remoteServerSock = INVALID_SOCKET;
         return false;
     }
 
-    std::cout << "Connected to remote server at " << ip << ":" << port << '\n';
+    std::cout << "[Connection] [RemoteServer] Connected to remote server at " << ip << ":" << port << '\n';
     return true;
 }
 
@@ -53,7 +53,7 @@ void remoteServerConnectorLoop()
         }
         else
         {
-            std::cout << "Failed to connect to remote server. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
+            std::cout << "[Connection] [RemoteServer] Failed to connect to remote server. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
             std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
         }
     }
@@ -72,24 +72,24 @@ void listenForRemoteServerData()
         if (bytesReceived > 0)
         {
             buffer[bytesReceived] = '\0';
-            std::cout << "\nReceived from remote server: " << buffer << '\n' << ">> ";
+            std::cout << "\n[Connection] [RemoteServer] Received from remote server: " << buffer << '\n' << ">> ";
             // Forward the command to CS2 console
             auto payload = create_command_payload(buffer);
             sendPayloadToCS2Console(payload);
         }
         else if (bytesReceived == 0)
         {
-            std::cout << "\nConnection closed by remote server" << '\n';
+            std::cout << "\n[Connection] [RemoteServer] Connection closed by remote server" << '\n';
             break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
-            std::cerr << "recv failed from remote server: " << WSAGetLastError() << '\n';
+            std::cerr << "[Connection] [RemoteServer] recv failed from remote server: " << WSAGetLastError() << '\n';
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    std::cout << "Remote server listener thread stopping..." << '\n';
+    std::cout << "[Connection] [RemoteServer] Remote server listener thread stopping..." << '\n';
     remoteServerConnected = false;
     listeningRemoteServer = false;
     closesocket(remoteServerSock);

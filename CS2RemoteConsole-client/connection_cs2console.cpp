@@ -17,7 +17,7 @@ bool connectToCS2Console()
         cs2ConsoleSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (cs2ConsoleSock == INVALID_SOCKET)
         {
-            std::cerr << "Failed to create socket for CS2 console: " << WSAGetLastError() << '\n';
+            std::cerr << "[Connection] [CS2Console] Failed to create socket for CS2 console: " << WSAGetLastError() << '\n';
             return false;
         }
 
@@ -28,13 +28,13 @@ bool connectToCS2Console()
 
         if (connect(cs2ConsoleSock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
         {
-            std::cerr << "Connection to CS2 console failed. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
+            std::cerr << "[Connection] [CS2Console] Connection to CS2 console failed. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
             closesocket(cs2ConsoleSock);
             std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
         }
         else
         {
-            std::cout << "Connected to CS2 console at " << ip << ":" << port << '\n';
+            std::cout << "[Connection] [CS2Console] Connected to CS2 console at " << ip << ":" << port << '\n';
             return true;
         }
     }
@@ -57,24 +57,24 @@ void listenForCS2ConsoleData()
         }
         else if (bytesReceived == 0)
         {
-            std::cout << "\nConnection closed by CS2 console" << '\n';
+            std::cout << "\n[Connection] [CS2Console] Connection closed by CS2 console" << '\n';
             break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
-            std::cerr << "recv failed from CS2 console: " << WSAGetLastError() << '\n';
+            std::cerr << "[Connection] [CS2Console] recv failed from CS2 console: " << WSAGetLastError() << '\n';
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    std::cout << "CS2 console listener thread stopping..." << '\n';
+    std::cout << "[Connection] [CS2Console] CS2 console listener thread stopping..." << '\n';
 }
 
 int sendPayloadToCS2Console(const std::vector<unsigned char>& payload)
 {
     if (send(cs2ConsoleSock, reinterpret_cast<const char*>(payload.data()), static_cast<int>(payload.size()), 0) == SOCKET_ERROR)
     {
-        std::cerr << "Failed to send data to CS2 console" << '\n';
+        std::cerr << "[Connection] [CS2Console] Failed to send data to CS2 console" << '\n';
         return 1;
     }
     return 0;
