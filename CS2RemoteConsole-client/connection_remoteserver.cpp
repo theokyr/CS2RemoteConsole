@@ -1,8 +1,8 @@
 ﻿#include "connection_remoteserver.h"
-#include "connection_RemoteServer.h"
 #include "payloads.h"
 #include <iostream>
 #include <ws2tcpip.h>
+#include <chrono>
 
 SOCKET remoteServerSock = INVALID_SOCKET;
 std::atomic<bool> listeningRemoteServer(false);
@@ -43,18 +43,29 @@ void remoteServerConnectorLoop()
 {
     const int reconnect_delay = Config::getInstance().getInt("remote_server_reconnect_delay", 5000);
 
-    while (!remoteServerConnected)
+    while (true)
     {
-        if (connectToRemoteServer())
+        if (!remoteServerConnected)
         {
-            remoteServerConnected = true;
-            listeningRemoteServer = true;
-            remoteServerListenerThread = std::thread(listenForRemoteServerData);
+            if (connectToRemoteServer())
+            {
+                remoteServerConnected = true;
+                listeningRemoteServer = true;
+                if (remoteServerListenerThread.joinable())
+                {
+                    remoteServerListenerThread.join();
+                }
+                remoteServerListenerThread = std::thread(listenForRemoteServerData);
+            }
+            else
+            {
+                std::cout << "[Connection] [RemoteServer] Failed to connect to remote server. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
+                std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
+            }
         }
         else
         {
-            std::cout << "[Connection] [RemoteServer] Failed to connect to remote server. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 }
@@ -94,9 +105,6 @@ void listenForRemoteServerData()
     listeningRemoteServer = false;
     closesocket(remoteServerSock);
     remoteServerSock = INVALID_SOCKET;
-
-    // Restart the connector thread
-    remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 }
 
 void cleanupRemoteServer()
@@ -109,7 +117,7 @@ void cleanupRemoteServer()
     }
     if (remoteServerConnectorThread.joinable())
     {
-        remoteServerConnectorThread.join();
+        remoteServerConnectorThread.detach();
     }
     if (remoteServerSock != INVALID_SOCKET)
     {
