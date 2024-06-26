@@ -9,7 +9,6 @@
 #include "connection_remoteserver.h"
 
 std::atomic<bool> running(true);
-std::thread sanityCheckThread;
 
 void signalHandler(int signum)
 {
@@ -54,20 +53,6 @@ bool setupWinsock()
     return true;
 }
 
-void sendSanityCheck()
-{
-    while (running)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        if (running)
-        {
-            sendPayloadToCS2Console(command_say_sanity_check_payload);
-            std::cout << "[Main] Sent sanity check command to CS2 console" << '\n';
-        }
-    }
-    std::cout << "[Main] Sanity check thread stopping..." << '\n';
-}
-
 void userInputHandler()
 {
     while (running)
@@ -92,7 +77,7 @@ void userInputHandler()
                 std::string command = input.substr(4);
                 auto payload = create_command_payload(command);
                 sendPayloadToCS2Console(payload);
-                std::cout << "[Main] Sent command to CS2 console: " << command << '\n';
+                std::cout << "[Main] Attempting to send command to CS2 console: " << command << '\n';
             }
             else
             {
@@ -139,12 +124,6 @@ void gracefulShutdown()
 
     running = false;
 
-    if (sanityCheckThread.joinable())
-    {
-        std::cout << "[Main] Waiting for sanity check thread to finish..." << '\n';
-        sanityCheckThread.join();
-    }
-
     cleanupCS2Console();
     cleanupRemoteServer();
 
@@ -161,20 +140,9 @@ int main()
     {
         return 1;
     }
-    if (!connectToCS2Console())
-    {
-        WSACleanup();
-        return 1;
-    }
 
+    cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
     remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
-
-    bool debug_sanity = Config::getInstance().getInt("debug_sanity", 0) == 1;
-    if (debug_sanity)
-    {
-        std::cout << "[Main] Debug sanity check enabled!" << '\n';
-        sanityCheckThread = std::thread(sendSanityCheck);
-    }
 
     userInputHandler();
 
