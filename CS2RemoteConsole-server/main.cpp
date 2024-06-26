@@ -14,25 +14,28 @@
 #pragma comment(lib, "ws2_32.lib")
 #define SOCKET_ERROR_CODE WSAGetLastError()
 #else
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <unistd.h>
-    #include <arpa/inet.h>
-    #define SOCKET int
-    #define INVALID_SOCKET -1
-    #define SOCKET_ERROR -1
-    #define closesocket close
-    #define SOCKET_ERROR_CODE errno
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket close
+#define SOCKET_ERROR_CODE errno
 #endif
 
 std::vector<SOCKET> clients;
 std::mutex clientsMutex;
 std::atomic<bool> running(true);
+SOCKET listenSocket;
 
 void signalHandler(int signum)
 {
     std::cout << "\nInterrupt signal (" << signum << ") received.\n";
     running = false;
+    // Close the listening socket to unblock the accept() call
+    closesocket(listenSocket);
 }
 
 #ifdef _WIN32
@@ -81,7 +84,7 @@ void acceptClients(SOCKET listenSocket)
             {
                 std::cerr << "accept failed: " << SOCKET_ERROR_CODE << std::endl;
             }
-            continue;
+            break; 
         }
 
         std::cout << "New client connected." << std::endl;
@@ -113,6 +116,7 @@ void userInputHandler()
         if (input == "quit")
         {
             running = false;
+            closesocket(listenSocket);
             break;
         }
 
@@ -133,7 +137,7 @@ int main()
     }
 #endif
 
-    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listenSocket == INVALID_SOCKET)
     {
         std::cerr << "Error creating socket: " << SOCKET_ERROR_CODE << std::endl;
@@ -173,10 +177,8 @@ int main()
     std::thread acceptThread(acceptClients, listenSocket);
     userInputHandler();
 
-    running = false;
     acceptThread.join();
 
-    closesocket(listenSocket);
     {
         std::lock_guard<std::mutex> lock(clientsMutex);
         for (const auto& clientSocket : clients)
@@ -185,6 +187,8 @@ int main()
         }
         clients.clear();
     }
+
+    closesocket(listenSocket);
 
 #ifdef _WIN32
     cleanupWinsock();
