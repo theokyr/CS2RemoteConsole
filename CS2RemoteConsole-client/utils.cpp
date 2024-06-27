@@ -1,4 +1,13 @@
-﻿#include "utils.h"
+﻿#include <iostream>
+#include <atomic>
+#include <thread>
+#include <csignal>
+#include "config.h"
+#include "payloads.h"
+#include "utils.h"
+#include "connection_cs2console.h"
+#include "connection_remoteserver.h"
+#pragma once
 
 
 std::vector<unsigned char> create_command_payload(const std::string& command)
@@ -26,4 +35,41 @@ std::string getCurrentDirectory()
         return std::string(buffer);
     }
     return "";
+}
+
+bool setupConfig()
+{
+    std::vector<std::string> config_paths = {
+        "config.ini",
+        getCurrentDirectory() + "\\config.ini"
+    };
+
+    for (const auto& path : config_paths)
+    {
+        try
+        {
+            std::cout << "[Main] Attempting to load config from: " << path << '\n';
+            Config::getInstance().load(path);
+            std::cout << "[Main] Config loaded successfully from: " << path << '\n';
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Main] Failed to load config from " << path << ": " << e.what() << '\n';
+        }
+    }
+
+    std::cerr << "[Main] Failed to load config from any location." << '\n';
+    return false;
+}
+
+bool setupWinsock()
+{
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        std::cerr << "[Main] WSAStartup failed" << '\n';
+        return false;
+    }
+    return true;
 }
