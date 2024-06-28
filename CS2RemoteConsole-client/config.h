@@ -7,6 +7,8 @@
 #include <sstream>
 #include <memory>
 
+#pragma once
+
 class Config {
 public:
     static Config& getInstance();

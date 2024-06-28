@@ -8,6 +8,8 @@
 #include "connection_cs2console.h"
 #include "config.h"
 
+#pragma once
+
 #pragma comment(lib, "ws2_32.lib")
 
 extern SOCKET remoteServerSock;

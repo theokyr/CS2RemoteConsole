@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#pragma once
+
 std::vector<unsigned char> create_command_payload(const std::string& command);
 
 const std::vector<unsigned char> init_payload = {

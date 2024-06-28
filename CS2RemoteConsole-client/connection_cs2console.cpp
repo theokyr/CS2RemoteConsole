@@ -2,6 +2,8 @@
 #include <iostream>
 #include <ws2tcpip.h>
 
+#pragma once
+
 SOCKET cs2ConsoleSock = INVALID_SOCKET;
 std::atomic<bool> listeningCS2(false);
 std::atomic<bool> cs2ConsoleConnected(false);
@@ -81,24 +83,73 @@ void cs2ConsoleConnectorLoop()
     }
 }
 
+void processPRNTMessage(const unsigned char* data, int size)
+{
+    const int headerSize = 34; // PRNT header is 34 bytes
+    int offset = 0;
+
+    while (offset + headerSize <= size)
+    {
+        PRNTMessage msg;
+
+        msg.magic = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
+        if (msg.magic != 0x50524E54) //TODO: Use PRNT_MAGIC from messages.h
+        {
+            // "PRNT"
+            std::cout << "Received non-PRNT message at offset " << offset << "\n";
+            return;
+        }
+
+        msg.commandType = byteSwap16(*reinterpret_cast<const uint16_t*>(data + offset + 4));
+        msg.messageSize = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 6));
+        msg.timestamp = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 12));
+        msg.unknown1 = *reinterpret_cast<const uint64_t*>(data + offset + 16);
+        msg.category = byteSwap16(*reinterpret_cast<const uint16_t*>(data + offset + 24));
+        msg.color = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 26));
+        msg.unknown2 = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 30));
+
+        int messageContentLength = msg.messageSize - (headerSize - 8);
+        if (messageContentLength <= 0 || msg.messageSize > static_cast<uint32_t>(size - offset))
+        {
+            std::cout << "Incomplete PRNT message received\n";
+            return;
+        }
+
+        msg.message = std::string(reinterpret_cast<const char*>(data + offset + headerSize), messageContentLength);
+
+        // Print the formatted message
+        std::cout << getColorCode(msg.color);
+        std::cout << "[" << getCategoryName(msg.unknown2) << "] ";
+
+        // Print each character of the message as an unsigned char
+        for (unsigned char c : msg.message)
+        {
+            std::cout << c;
+        }
+
+        std::cout << "\033[0m" << std::endl; // Reset color and add a newline
+
+        offset += msg.messageSize;
+    }
+}
+
 void listenForCS2ConsoleData()
 {
-    char buffer[1024];
-    int bytesReceived;
+    std::vector<unsigned char> buffer(0x800000);
     u_long mode = 1; // Set non-blocking mode
     ioctlsocket(cs2ConsoleSock, FIONBIO, &mode);
 
     while (listeningCS2)
     {
-        bytesReceived = recv(cs2ConsoleSock, buffer, sizeof(buffer) - 1, 0);
+        int bytesReceived = recv(cs2ConsoleSock, reinterpret_cast<char*>(buffer.data()), static_cast<int>(buffer.size()) - 1, 0);
         if (bytesReceived > 0)
         {
             buffer[bytesReceived] = '\0';
-            std::cout << "\nReceived from CS2 console: " << buffer << '\n' << ">> ";
+            processPRNTMessage(buffer.data(), bytesReceived);
         }
         else if (bytesReceived == 0)
         {
-            std::cout << "\n[Connection] [CS2Console] Connection closed by CS2 console" << '\n';
+            std::cout << "\n[Connection] [CS2Console] Connection closed by CS2 console\n";
             break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
@@ -106,9 +157,9 @@ void listenForCS2ConsoleData()
             std::cerr << "[Connection] [CS2Console] recv failed from CS2 console: " << WSAGetLastError() << '\n';
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Reduced sleep time
     }
-    std::cout << "[Connection] [CS2Console] CS2 console listener thread stopping..." << '\n';
+    std::cout << "[Connection] [CS2Console] CS2 console listener thread stopping...\n";
 }
 
 int sendPayloadToCS2Console(const std::vector<unsigned char>& payload)
