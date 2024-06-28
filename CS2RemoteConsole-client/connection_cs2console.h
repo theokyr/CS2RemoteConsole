@@ -1,6 +1,9 @@
 ﻿#ifndef CONNECTION_CS2CONSOLE_H
 #define CONNECTION_CS2CONSOLE_H
 
+#include "lib/messages/chan.h"
+#include "lib/messages/prnt.h"
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <atomic>
@@ -9,9 +12,11 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <iostream>
+#include <ws2tcpip.h>
+
 #include "config.h"
 #include "payloads.h"
-#include "messages.h"
 #include "utils.h"
 
 #pragma once

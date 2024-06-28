@@ -1,6 +1,7 @@
 ﻿#include "connection_cs2console.h"
-#include <iostream>
-#include <ws2tcpip.h>
+
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 #pragma once
 
@@ -10,8 +11,7 @@ std::atomic<bool> cs2ConsoleConnected(false);
 std::thread cs2ListenerThread;
 std::thread cs2ConnectorThread;
 
-bool connectToCS2Console()
-{
+bool connectToCS2Console() {
     const std::string ip = Config::getInstance().get("cs2_console_ip", "127.0.0.1");
     const int port = Config::getInstance().getInt("cs2_console_port", 29000);
 
@@ -39,8 +39,7 @@ bool connectToCS2Console()
     return true;
 }
 
-void cs2ConsoleConnectorLoop()
-{
+void cs2ConsoleConnectorLoop() {
     const int reconnect_delay = Config::getInstance().getInt("cs2_console_reconnect_delay", 5000);
     const int sanity_check_interval = Config::getInstance().getInt("debug_sanity_interval", 5000);
 
@@ -83,87 +82,67 @@ void cs2ConsoleConnectorLoop()
     }
 }
 
-void processPRNTMessage(const unsigned char* data, int size)
-{
-    const int headerSize = 34; // PRNT header is 34 bytes
-    int offset = 0;
+void listenForCS2ConsoleData() {
+    auto logger = spdlog::basic_logger_mt("Connection-CS2Console", "logs/connection_cs2console.log");
 
-    while (offset + headerSize <= size)
-    {
-        PRNTMessage msg;
-
-        msg.magic = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
-        if (msg.magic != 0x50524E54) //TODO: Use PRNT_MAGIC from messages.h
-        {
-            // "PRNT"
-            std::cout << "Received non-PRNT message at offset " << offset << "\n";
-            return;
-        }
-
-        msg.commandType = byteSwap16(*reinterpret_cast<const uint16_t*>(data + offset + 4));
-        msg.messageSize = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 6));
-        msg.timestamp = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 12));
-        msg.unknown1 = *reinterpret_cast<const uint64_t*>(data + offset + 16);
-        msg.category = byteSwap16(*reinterpret_cast<const uint16_t*>(data + offset + 24));
-        msg.color = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 26));
-        msg.unknown2 = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset + 30));
-
-        int messageContentLength = msg.messageSize - (headerSize - 8);
-        if (messageContentLength <= 0 || msg.messageSize > static_cast<uint32_t>(size - offset))
-        {
-            std::cout << "Incomplete PRNT message received\n";
-            return;
-        }
-
-        msg.message = std::string(reinterpret_cast<const char*>(data + offset + headerSize), messageContentLength);
-
-        // Print the formatted message
-        std::cout << getColorCode(msg.color);
-        std::cout << "[" << getCategoryName(msg.unknown2) << "] ";
-
-        // Print each character of the message as an unsigned char
-        for (unsigned char c : msg.message)
-        {
-            std::cout << c;
-        }
-
-        std::cout << "\033[0m" << std::endl; // Reset color and add a newline
-
-        offset += msg.messageSize;
-    }
-}
-
-void listenForCS2ConsoleData()
-{
     std::vector<unsigned char> buffer(0x800000);
     u_long mode = 1; // Set non-blocking mode
     ioctlsocket(cs2ConsoleSock, FIONBIO, &mode);
 
-    while (listeningCS2)
-    {
+    while (listeningCS2) {
         int bytesReceived = recv(cs2ConsoleSock, reinterpret_cast<char*>(buffer.data()), static_cast<int>(buffer.size()) - 1, 0);
-        if (bytesReceived > 0)
-        {
-            buffer[bytesReceived] = '\0';
-            processPRNTMessage(buffer.data(), bytesReceived);
-        }
-        else if (bytesReceived == 0)
-        {
-            std::cout << "\n[Connection] [CS2Console] Connection closed by CS2 console\n";
+        if (bytesReceived > 0) {
+            logger->info("[Data] Bytes received: {}", bytesReceived);
+            int offset = 0;
+            while (offset < bytesReceived) {
+                if (offset + sizeof(uint32_t) > bytesReceived) {
+                    logger->error("[Error] Incomplete packet, exiting loop");
+                    break;
+                }
+
+                uint32_t magic = byteSwap32(*reinterpret_cast<const uint32_t*>(buffer.data() + offset));
+                logger->info("[Data] Magic number: {:#x} at offset {}", magic, offset);
+
+                if (magic == PRNT_MAGIC) {
+                    logger->info("[Processing] PRNT message at offset {}", offset);
+                    processPRNTMessage(buffer.data() + offset, bytesReceived - offset);
+                } else if (magic == CHAN_MAGIC) {
+                    logger->info("[Processing] CHAN message at offset {}", offset);
+                    processCHANMessage(buffer.data() + offset + 12, bytesReceived - offset - 12); // Skip the header
+                } else {
+                    logger->error("[Error] Unknown magic number, exiting loop");
+                    break;
+                }
+
+                // Check if packetSize calculation is within bounds
+                if (offset + 10 > bytesReceived) {
+                    logger->error("[Error] Incomplete packet size information, exiting loop");
+                    break;
+                }
+
+                uint32_t packetSize = byteSwap32(*reinterpret_cast<const uint32_t*>(buffer.data() + offset + 6));
+                logger->info("[Data] Packet size: {}", packetSize);
+
+                if (packetSize == 0 || offset + packetSize > bytesReceived) {
+                    logger->error("[Error] Invalid packet size, exiting loop");
+                    break;
+                }
+
+                offset += packetSize;
+            }
+        } else if (bytesReceived == 0) {
+            logger->info("\n[Connection] [CS2Console] Connection closed by CS2 console");
             break;
-        }
-        else if (WSAGetLastError() != WSAEWOULDBLOCK)
-        {
-            std::cerr << "[Connection] [CS2Console] recv failed from CS2 console: " << WSAGetLastError() << '\n';
+        } else if (WSAGetLastError() != WSAEWOULDBLOCK) {
+            logger->error("[Connection] [CS2Console] recv failed from CS2 console: {}", WSAGetLastError());
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Reduced sleep time
     }
-    std::cout << "[Connection] [CS2Console] CS2 console listener thread stopping...\n";
+    logger->info("[Connection] [CS2Console] CS2 console listener thread stopping...");
 }
 
-int sendPayloadToCS2Console(const std::vector<unsigned char>& payload)
-{
+int sendPayloadToCS2Console(const std::vector<unsigned char>& payload) {
     if (cs2ConsoleSock == INVALID_SOCKET)
     {
         std::cerr << "[Connection] [CS2Console] Cannot send payload: Not connected to CS2 console" << '\n';
@@ -181,8 +160,7 @@ int sendPayloadToCS2Console(const std::vector<unsigned char>& payload)
     return 0;
 }
 
-void cleanupCS2Console()
-{
+void cleanupCS2Console() {
     listeningCS2 = false;
     cs2ConsoleConnected = false;
     if (cs2ListenerThread.joinable())
