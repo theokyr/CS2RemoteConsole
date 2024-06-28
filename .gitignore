@@ -1,3 +1,5 @@
+docs/
+logs/
 bin/
 obj/
 /packages/
