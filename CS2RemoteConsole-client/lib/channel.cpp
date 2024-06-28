@@ -6,18 +6,24 @@
 
 std::vector<Channel> channels;
 
-std::string getChannelName(uint32_t channelID) {
-    for (const auto& channel : channels) {
-        if (channel.id == channelID) {
+std::string getChannelName(uint32_t channelID)
+{
+    for (const auto& channel : channels)
+    {
+        if (channel.id == channelID)
+        {
             return channel.name;
         }
     }
     return "Unknown-" + std::to_string(channelID);
 }
 
-std::string getColorCode(uint32_t channelID) {
-    for (const auto& channel : channels) {
-        if (channel.id == channelID) {
+std::string getColorCode(uint32_t channelID)
+{
+    for (const auto& channel : channels)
+    {
+        if (channel.id == channelID)
+        {
             uint8_t r = (channel.RGBA_Override >> 16) & 0xFF;
             uint8_t g = (channel.RGBA_Override >> 8) & 0xFF;
             uint8_t b = channel.RGBA_Override & 0xFF;

@@ -6,13 +6,17 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
+#include "utils.h"
 
 #pragma once
 
-class Config {
+bool setupConfig();
+
+class Config
+{
 public:
     static Config& getInstance();
-    
+
     void load(const std::string& filename);
     std::string get(const std::string& key, const std::string& default_value = "") const;
     int getInt(const std::string& key, int default_value = 0) const;
@@ -22,7 +26,9 @@ public:
     void operator=(Config const&) = delete;
 
 private:
-    Config() {} // Private constructor
+    Config()
+    {
+    } // Private constructor
     std::unordered_map<std::string, std::string> config_map;
 };
 

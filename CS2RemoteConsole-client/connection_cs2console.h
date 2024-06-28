@@ -23,6 +23,9 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+constexpr size_t HEADER_SIZE = 6; // 4 bytes for type, 2 for size
+constexpr size_t MAX_VCON_PACKET_SIZE = 8000000; // Maximum VConsole packet size
+
 extern SOCKET cs2ConsoleSock;
 extern std::atomic<bool> listeningCS2;
 extern std::atomic<bool> cs2ConsoleConnected;

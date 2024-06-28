@@ -6,11 +6,11 @@
 
 #pragma once
 
-#define CMND_MAGIC 0x444E4D43 // "CMND" in little endian
+const std::string CMND_MESSAGE_TYPE = "CMND";
 
 struct CMNDMessage
 {
-    uint32_t magic;
+    uint32_t messageType;
     uint16_t commandType;
     uint32_t messageSize;
     uint16_t unknown;

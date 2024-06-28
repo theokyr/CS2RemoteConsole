@@ -10,7 +10,7 @@
 
 #pragma once
 
-#define CHAN_MAGIC 0x4348414E
+const std::string CHAN_MESSAGE_TYPE = "CHAN";
 
 struct CHANMessage
 {

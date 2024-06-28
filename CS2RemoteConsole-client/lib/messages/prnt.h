@@ -6,11 +6,11 @@
 
 #pragma once
 
-#define PRNT_MAGIC 0x50524E54 // "PRNT" in little endian
+const std::string PRNT_MESSAGE_TYPE = "PRNT";
 
 struct PRNTMessage
 {
-    uint32_t magic;
+    uint32_t messageType;
     uint16_t commandType;
     uint32_t messageSize;
     uint32_t channelID;

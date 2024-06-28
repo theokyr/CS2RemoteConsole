@@ -2,25 +2,32 @@
 #include <atomic>
 #include <thread>
 #include <csignal>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 #include "config.h"
 #include "payloads.h"
 #include "utils.h"
 #include "connection_cs2console.h"
 #include "connection_remoteserver.h"
+#include "logging.h"
 
 std::atomic<bool> running(true);
 
 void signalHandler(int signum)
 {
-    std::cout << "\n[Main] Interrupt signal (" << signum << ") received.\n";
+    auto logger = spdlog::get(LOGGER_APPLICATION);
+    logger->info("[Main] Interrupt signal {} received.", signum);
     running = false;
 }
 
 void userInputHandler()
 {
+    auto logger = spdlog::get(LOGGER_APPLICATION);
     while (running)
     {
-        std::cout << ">> ";
+        // std::cout << ">> ";
         std::string input;
         std::getline(std::cin, input);
 
@@ -28,7 +35,7 @@ void userInputHandler()
 
         if (input == "quit" || input == "exit" || input == "x")
         {
-            std::cout << "[Main] Exit command received. Initiating shutdown..." << '\n';
+            logger->info("[Main] Exit command received. Initiating shutdown...");
             running = false;
             break;
         }
@@ -40,41 +47,33 @@ void userInputHandler()
                 std::string command = input.substr(4);
                 auto payload = create_command_payload(command);
                 sendPayloadToCS2Console(payload);
-                std::cout << "[Main] Attempting to send command to CS2 console: " << command << '\n';
+                logger->info("[Main] Sending command {} to CS2 Console...", command);
             }
             else
             {
-                std::cout << "[Main] Invalid command format. Use 'cmd <your_command>'" << '\n';
+                logger->error("[Main] Invalid command format. Use 'cmd <your_command>'");
             }
         }
         else
         {
             switch (input[0])
             {
-            case '0':
-                sendPayloadToCS2Console(command_smooth_disable_payload);
-                std::cout << "[Main] Sent smooth disable command" << '\n';
-                break;
-            case '1':
-                sendPayloadToCS2Console(command_smooth_enable_payload);
-                std::cout << "[Main] Sent smooth enable command" << '\n';
-                break;
             case 'y':
                 if (!listeningCS2)
                 {
                     listeningCS2 = true;
                     cs2ListenerThread = std::thread(listenForCS2ConsoleData);
-                    std::cout << "[Main] Started CS2 console output listening thread" << '\n';
+                    logger->info("[Main] Started CS2 console output listening thread");
                 }
                 else
                 {
                     listeningCS2 = false;
                     if (cs2ListenerThread.joinable()) cs2ListenerThread.join();
-                    std::cout << "[Main] Stopped CS2 console output listening thread" << '\n';
+                    logger->info("[Main] Stopped CS2 console output listening thread");
                 }
                 break;
             default:
-                std::cout << "[Main] Unknown command" << '\n';
+                logger->warn("Unknown command");
                 break;
             }
         }
@@ -83,7 +82,8 @@ void userInputHandler()
 
 void gracefulShutdown()
 {
-    std::cout << "[Main] Initiating graceful shutdown..." << '\n';
+    auto logger = spdlog::get(LOGGER_APPLICATION);
+    logger->info("Initiating graceful shutdown...");
 
     running = false;
 
@@ -92,11 +92,35 @@ void gracefulShutdown()
 
     WSACleanup();
 
-    std::cout << "[Main] Graceful shutdown complete. Bye-bye!" << '\n';
+    std::cout << "CS2RemoteConsole shutdown complete. Bye - bye!..." << '\n';
+}
+
+void setupLogging()
+{
+    spdlog::set_level(spdlog::level::debug);
+
+    std::vector<spdlog::sink_ptr> applicationSinks;
+    applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
+    auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
+    register_logger(applicationLogger);
+
+    std::vector<spdlog::sink_ptr> protocolSinks;
+    protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    protocolSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/protocol.log"));
+    auto protocolLogger = std::make_shared<spdlog::logger>(LOGGER_VCON, begin(protocolSinks), end(protocolSinks));
+    register_logger(protocolLogger);
+
+    std::vector<spdlog::sink_ptr> remoteServerSinks;
+    remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    remoteServerSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/remote.log"));
+    auto remoteServerLogger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, begin(remoteServerSinks), end(remoteServerSinks));
+    register_logger(remoteServerLogger);
 }
 
 int main()
 {
+    setupLogging();
     signal(SIGINT, signalHandler);
 
     if (!setupConfig() || !setupWinsock())

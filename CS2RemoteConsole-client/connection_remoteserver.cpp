@@ -3,6 +3,9 @@
 #include <iostream>
 #include <ws2tcpip.h>
 #include <chrono>
+#include <spdlog/spdlog.h>
+
+#include "logging.h"
 
 SOCKET remoteServerSock = INVALID_SOCKET;
 std::atomic<bool> listeningRemoteServer(false);
@@ -12,13 +15,15 @@ std::thread remoteServerConnectorThread;
 
 bool connectToRemoteServer()
 {
+    auto logger = spdlog::get(LOGGER_REMOTE_SERVER);
+
     const std::string ip = Config::getInstance().get("remote_server_ip", "127.0.0.1");
     const int port = Config::getInstance().getInt("remote_server_port", 42069);
 
     remoteServerSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remoteServerSock == INVALID_SOCKET)
     {
-        std::cerr << "[Connection] [RemoteServer] Failed to create socket for remote server: " << WSAGetLastError() << '\n';
+        logger->error("[Connection] [RemoteServer] Failed to create socket for remote server: {}", WSAGetLastError());
         return false;
     }
 
@@ -29,18 +34,20 @@ bool connectToRemoteServer()
 
     if (connect(remoteServerSock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
     {
-        std::cerr << "[Connection] [RemoteServer] Connection to remote server failed: " << WSAGetLastError() << '\n';
+        logger->error("[Connection] [RemoteServer] Connection to remote server failed: {}", WSAGetLastError());
         closesocket(remoteServerSock);
         remoteServerSock = INVALID_SOCKET;
         return false;
     }
 
-    std::cout << "[Connection] [RemoteServer] Connected to remote server at " << ip << ":" << port << '\n';
+    logger->info("[Connection] [RemoteServer] Connected to remote server at {}:{}", ip, port);
     return true;
 }
 
 void remoteServerConnectorLoop()
 {
+    auto logger = spdlog::get(LOGGER_REMOTE_SERVER);
+
     const int reconnect_delay = Config::getInstance().getInt("remote_server_reconnect_delay", 5000);
 
     while (true)
@@ -59,7 +66,7 @@ void remoteServerConnectorLoop()
             }
             else
             {
-                std::cout << "[Connection] [RemoteServer] Failed to connect to remote server. Retrying in " << reconnect_delay / 1000 << " seconds...\n";
+                logger->error("[Connection] [RemoteServer] Failed to connect to remote server. Retrying in {} seconds...", reconnect_delay / 1000);
                 std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
             }
         }
@@ -72,6 +79,8 @@ void remoteServerConnectorLoop()
 
 void listenForRemoteServerData()
 {
+    auto logger = spdlog::get(LOGGER_REMOTE_SERVER);
+
     char buffer[1024];
     int bytesReceived;
     u_long mode = 1; // Set non-blocking mode
@@ -83,24 +92,25 @@ void listenForRemoteServerData()
         if (bytesReceived > 0)
         {
             buffer[bytesReceived] = '\0';
-            std::cout << "\n[Connection] [RemoteServer] Received from remote server: " << buffer << '\n' << ">> ";
+            logger->info("[Connection] [RemoteServer] Received '{}' from remote server", buffer);
             // Forward the command to CS2 console
             auto payload = create_command_payload(buffer);
             sendPayloadToCS2Console(payload);
         }
         else if (bytesReceived == 0)
         {
-            std::cout << "\n[Connection] [RemoteServer] Connection closed by remote server" << '\n';
+            logger->warn("[Connection] [RemoteServer] Connection closed by remote server");
             break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
-            std::cerr << "[Connection] [RemoteServer] recv failed from remote server: " << WSAGetLastError() << '\n';
+            logger->error("[Connection] [RemoteServer] recv failed from remote server: Error code {} ", WSAGetLastError());
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    std::cout << "[Connection] [RemoteServer] Remote server listener thread stopping..." << '\n';
+
+    logger->info("[Connection] [RemoteServer] Remote server listener thread stopping...");
     remoteServerConnected = false;
     listeningRemoteServer = false;
     closesocket(remoteServerSock);

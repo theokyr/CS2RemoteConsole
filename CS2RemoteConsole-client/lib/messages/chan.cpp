@@ -1,59 +1,62 @@
 ﻿#include "chan.h"
 
-extern std::vector<Channel> channels;
+#include <spdlog/spdlog.h>
 
 void processCHANMessage(const unsigned char* data, int size)
 {
-    int offset = 0;
-    CHANMessage chanMsg;
+    // Ensure we have enough data for the message type, packet size, and length (4 + 2 + 2 = 8 bytes)
+    if (size < 8)
+    {
+        spdlog::error("Insufficient data size for CHAN message");
+        return;
+    }
 
-    chanMsg.length = byteSwap16(*reinterpret_cast<const uint16_t*>(data + offset));
+    // Skip the message type (4 bytes) and packet size (2 bytes)
+    int offset = 6;
+
+    // Read the number of channels
+    uint16_t channelCount;
+    std::memcpy(&channelCount, data + offset, sizeof(uint16_t));
+    channelCount = byteSwap16(channelCount);
     offset += 2;
 
-    std::cout << "Length: " << chanMsg.length << std::endl;
+    spdlog::debug("CHAN message: {} channels", channelCount);
 
-    for (int i = 0; i < chanMsg.length; ++i)
+    for (int i = 0; i < channelCount; ++i)
     {
+        if (size < offset + 58) // 4 + 4 + 4 + 4 + 4 + 4 + 34 = 58 bytes per channel
+        {
+            spdlog::error("Insufficient data size for channel {}", i);
+            return;
+        }
+
         Channel channel;
 
         channel.id = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "Channel ID: " << channel.id << std::endl;
 
         channel.unknown1 = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "Unknown1: " << channel.unknown1 << std::endl;
 
         channel.unknown2 = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "Unknown2: " << channel.unknown2 << std::endl;
 
         channel.verbosity_default = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "Verbosity Default: " << channel.verbosity_default << std::endl;
 
         channel.verbosity_current = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "Verbosity Current: " << channel.verbosity_current << std::endl;
 
-        uint8_t rgba[4];
-        std::memcpy(rgba, data + offset, 4);
-        channel.RGBA_Override = *reinterpret_cast<uint32_t*>(rgba);
+        channel.RGBA_Override = byteSwap32(*reinterpret_cast<const uint32_t*>(data + offset));
         offset += 4;
-        std::cout << "RGBA Override: " << std::hex << channel.RGBA_Override << std::dec << std::endl;
 
-        char nameBuf[35] = {0};
-        int nameLen = 0;
-        while (nameLen < 34 && data[offset + nameLen] != 0)
-        {
-            nameBuf[nameLen] = data[offset + nameLen];
-            nameLen++;
-        }
-        channel.name = std::string(nameBuf);
+        channel.name = std::string(reinterpret_cast<const char*>(data + offset), 34);
+        channel.name = channel.name.c_str(); // Trim null characters
         offset += 34;
-        std::cout << "Channel Name: " << channel.name << std::endl;
 
-        chanMsg.channels.push_back(channel);
+        spdlog::debug("Channel: ID={}, Unknown1={}, Unknown2={}, Default Verbosity={}, Current Verbosity={}, RGBA={:08X}, Name='{}'",
+                      channel.id, channel.unknown1, channel.unknown2, channel.verbosity_default,
+                      channel.verbosity_current, channel.RGBA_Override, channel.name);
 
         auto it = std::find_if(channels.begin(), channels.end(),
                                [&channel](const Channel& c) { return c.id == channel.id; });

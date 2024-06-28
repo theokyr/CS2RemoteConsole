@@ -1,48 +1,9 @@
 ﻿#include <iostream>
-#include <atomic>
-#include <thread>
-#include <csignal>
 #include "config.h"
 #include "payloads.h"
 #include "utils.h"
 #include "connection_cs2console.h"
 #include "connection_remoteserver.h"
-
-void hexDump(const char* desc, const void* addr, int len)
-{
-    int i;
-    unsigned char buff[17];
-    const unsigned char* pc = (const unsigned char*)addr;
-
-    if (desc != nullptr)
-        std::cout << desc << ":\n";
-
-    for (i = 0; i < len; i++)
-    {
-        if ((i % 16) == 0)
-        {
-            if (i != 0)
-                std::cout << "  " << buff << "\n";
-            std::cout << "  " << std::setw(4) << std::setfill('0') << std::hex << i << " ";
-        }
-
-        std::cout << " " << std::setw(2) << std::setfill('0') << std::hex << (int)pc[i];
-
-        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-            buff[i % 16] = '.';
-        else
-            buff[i % 16] = pc[i];
-        buff[(i % 16) + 1] = '\0';
-    }
-
-    while ((i % 16) != 0)
-    {
-        std::cout << "   ";
-        i++;
-    }
-
-    std::cout << "  " << buff << "\n";
-}
 
 uint32_t byteSwap32(uint32_t val)
 {
@@ -55,6 +16,30 @@ uint32_t byteSwap32(uint32_t val)
 uint16_t byteSwap16(uint16_t val)
 {
     return (val >> 8) | (val << 8);
+}
+
+std::string uint32ToString(uint32_t value)
+{
+    char chars[5];
+    chars[0] = static_cast<char>((value >> 24) & 0xFF);
+    chars[1] = static_cast<char>((value >> 16) & 0xFF);
+    chars[2] = static_cast<char>((value >> 8) & 0xFF);
+    chars[3] = static_cast<char>(value & 0xFF);
+    chars[4] = '\0'; // Null-terminate the string
+    return std::string(chars);
+}
+
+uint32_t stringToUint32(const std::string& str)
+{
+    if (str.length() != 4)
+    {
+        throw std::invalid_argument("String must be exactly 4 characters long");
+    }
+
+    return (static_cast<uint32_t>(str[0]) << 24) |
+        (static_cast<uint32_t>(str[1]) << 16) |
+        (static_cast<uint32_t>(str[2]) << 8) |
+        (static_cast<uint32_t>(str[3]));
 }
 
 // Color codes and category mappings
@@ -136,8 +121,8 @@ std::vector<unsigned char> create_command_payload(const std::string& command)
 //     std::vector<unsigned char> payload(msg.messageSize);
 //
 //     size_t offset = 0;
-//     memcpy(payload.data() + offset, &msg.magic, sizeof(msg.magic));
-//     offset += sizeof(msg.magic);
+//     memcpy(payload.data() + offset, &msg.messageType, sizeof(msg.messageType));
+//     offset += sizeof(msg.messageType);
 //     memcpy(payload.data() + offset, &msg.commandType, sizeof(msg.commandType));
 //     offset += sizeof(msg.commandType);
 //     memcpy(payload.data() + offset, &msg.messageSize, sizeof(msg.messageSize));
@@ -159,31 +144,6 @@ std::string getCurrentDirectory()
     return "";
 }
 
-bool setupConfig()
-{
-    std::vector<std::string> config_paths = {
-        "config.ini",
-        getCurrentDirectory() + "\\config.ini"
-    };
-
-    for (const auto& path : config_paths)
-    {
-        try
-        {
-            std::cout << "[Main] Attempting to load config from: " << path << '\n';
-            Config::getInstance().load(path);
-            std::cout << "[Main] Config loaded successfully from: " << path << '\n';
-            return true;
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << "[Main] Failed to load config from " << path << ": " << e.what() << '\n';
-        }
-    }
-
-    std::cerr << "[Main] Failed to load config from any location." << '\n';
-    return false;
-}
 
 bool setupWinsock()
 {

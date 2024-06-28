@@ -6,7 +6,7 @@
 CMNDMessage create_command_message(const std::string& command)
 {
     CMNDMessage msg;
-    msg.magic = CMND_MAGIC;
+    msg.messageType = stringToUint32(CMND_MESSAGE_TYPE);
     msg.commandType = 0x00D4;
     msg.unknown = 0;
     msg.command = command;
