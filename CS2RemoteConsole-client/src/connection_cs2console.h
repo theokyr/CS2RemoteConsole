@@ -4,7 +4,8 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include "../lib/vconsole.h"
+#include "../libvconsole/vconsole.h"
+#include "singletons.h"
 
 #pragma once
 
@@ -13,7 +14,6 @@ extern std::atomic<bool> cs2ConsoleConnected;
 extern std::atomic<bool> running;
 extern std::thread cs2ConnectorThread;
 extern std::thread cs2ListenerThread;
-extern VConsole vconsole;
 
 bool connectToCS2Console();
 void cs2ConsoleConnectorLoop();

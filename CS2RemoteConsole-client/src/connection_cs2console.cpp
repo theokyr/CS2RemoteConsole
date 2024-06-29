@@ -12,10 +12,10 @@ std::atomic<bool> cs2ConsoleConnected(false);
 std::atomic<bool> running(true);
 std::thread cs2ConnectorThread;
 std::thread cs2ListenerThread;
-VConsole vconsole;
 
 bool connectToCS2Console()
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     auto logger = spdlog::get(LOGGER_VCON);
     const std::string ip = Config::getInstance().get("cs2_console_ip", "127.0.0.1");
     const int port = Config::getInstance().getInt("cs2_console_port", 29000);
@@ -35,6 +35,7 @@ bool connectToCS2Console()
 
 void cs2ConsoleConnectorLoop()
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     auto logger = spdlog::get(LOGGER_VCON);
     const int reconnect_delay = Config::getInstance().getInt("cs2_console_reconnect_delay", 5000);
     const int sanity_check_interval = Config::getInstance().getInt("debug_sanity_interval", 5000);
@@ -82,6 +83,7 @@ void cs2ConsoleConnectorLoop()
 
 void listenForCS2ConsoleData()
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     auto logger = spdlog::get(LOGGER_VCON);
 
     try
@@ -118,6 +120,7 @@ void listenForCS2ConsoleData()
 
 int sendPayloadToCS2Console(const std::string& payload)
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     auto logger = spdlog::get(LOGGER_VCON);
 
     if (!cs2ConsoleConnected)
@@ -132,6 +135,7 @@ int sendPayloadToCS2Console(const std::string& payload)
 
 void cleanupCS2Console()
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     running = false;
     listeningCS2 = false;
     cs2ConsoleConnected = false;
@@ -150,6 +154,7 @@ void cleanupCS2Console()
 
 void initializeCS2Connection()
 {
+    auto& vconsole = VConsoleSingleton::getInstance();
     vconsole.setOnPRNTReceived([](const std::string& channelName, const std::string& message)
     {
         auto logger = spdlog::get(LOGGER_VCON);
