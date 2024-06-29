@@ -1,7 +1,7 @@
 ﻿#ifndef TUI_H
 #define TUI_H
 
-#pragma comment(lib, "pdcurses_win_x64_wide_utf8.lib")
+#pragma comment(lib, "pdcurses.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "advapi32.lib")
@@ -10,11 +10,11 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <mutex>
+#include <atomic>
+#include <chrono>
 
-#pragma once
-
-class TUI
-{
+class TUI {
 public:
     TUI();
     ~TUI();
@@ -25,22 +25,36 @@ public:
 
     void setCommandCallback(std::function<void(const std::string&)> callback);
     void addLogMessage(const std::string& message);
-    void addUserCommand(const std::string& command);
-    void setOnPRNTReceivedCallback(std::function<void(const std::string&, const std::string&)> callback);
+    void addConsoleMessage(const std::string& message);
 
 private:
+    static const size_t MAX_LOG_MESSAGES = 1000;
+    static const size_t MAX_CONSOLE_MESSAGES = 1000;
+
     WINDOW* m_logWindow;
+    WINDOW* m_consoleWindow;
     WINDOW* m_inputWindow;
     std::vector<std::string> m_logMessages;
+    std::vector<std::string> m_consoleMessages;
     std::string m_inputBuffer;
     std::function<void(const std::string&)> m_commandCallback;
-    std::function<void(const std::string&, const std::string&)> m_prntReceivedCallback;
+    std::mutex m_logMutex;
+    std::mutex m_consoleMutex;
+    std::atomic<bool> m_running;
+    std::atomic<bool> m_needsResize;
+    int m_lastWidth;
+    int m_lastHeight;
 
+    void checkResize();
     void createWindows();
     void destroyWindows();
-    void drawLogWindow();
+    void drawConsoleWindow();
     void drawInputWindow();
+    void drawLogWindow();
+    void drawWindows();
     void handleInput();
+    void handleResize();
+    void resizeWindows(int height, int width);
 };
 
-#endif
+#endif // TUI_H

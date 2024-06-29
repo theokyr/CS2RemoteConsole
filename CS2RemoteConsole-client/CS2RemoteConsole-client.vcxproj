@@ -184,6 +184,7 @@
         <ClInclude Include="src\payloads.h"/>
         <ClInclude Include="src\singletons.h" />
         <ClInclude Include="src\tui.h"/>
+        <ClInclude Include="src\tui_sink.h" />
         <ClInclude Include="src\utils.h"/>
     </ItemGroup>
     <ItemGroup>

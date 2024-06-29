@@ -14,6 +14,7 @@
 #include "connection_remoteserver.h"
 #include "logging.h"
 #include "tui.h"
+#include "tui_sink.h"
 
 std::atomic<bool> applicationRunning(true);
 TUI tui;
@@ -38,6 +39,8 @@ void gracefulShutdown()
 
     applicationRunning = false;
 
+    tui.shutdown();
+
     cleanupCS2Console();
     cleanupRemoteServer();
 
@@ -50,21 +53,26 @@ void setupLogging()
 {
     spdlog::set_level(spdlog::level::debug);
 
+    auto tui_sink = std::make_shared<tui_sink_mt>(tui);
+
     std::vector<spdlog::sink_ptr> applicationSinks;
-    applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
+    applicationSinks.push_back(tui_sink);
     auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
     register_logger(applicationLogger);
 
     std::vector<spdlog::sink_ptr> protocolSinks;
-    protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     protocolSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/protocol.log"));
+    protocolSinks.push_back(tui_sink);
     auto protocolLogger = std::make_shared<spdlog::logger>(LOGGER_VCON, begin(protocolSinks), end(protocolSinks));
     register_logger(protocolLogger);
 
     std::vector<spdlog::sink_ptr> remoteServerSinks;
-    remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     remoteServerSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/remote.log"));
+    remoteServerSinks.push_back(tui_sink);
     auto remoteServerLogger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, begin(remoteServerSinks), end(remoteServerSinks));
     register_logger(remoteServerLogger);
 }
@@ -73,6 +81,8 @@ int main()
 {
     try
     {
+        std::thread uiThread(tuiThread);
+        
         setupLogging();
         signal(SIGINT, signalHandler);
 
@@ -83,11 +93,8 @@ int main()
 
         tui.setCommandCallback([](const std::string& command)
         {
-            tui.addUserCommand(command);
             sendPayloadToCS2Console(command);
         });
-
-        std::thread uiThread(tuiThread);
 
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
@@ -95,7 +102,7 @@ int main()
         auto& vconsole = VConsoleSingleton::getInstance();
         vconsole.setOnPRNTReceived([](const std::string& source, const std::string& message)
         {
-            tui.addLogMessage(source + ": " + message);
+            tui.addConsoleMessage(source + ": " + message);
         });
 
         // Main application loop
