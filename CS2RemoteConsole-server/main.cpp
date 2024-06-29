@@ -27,13 +27,13 @@
 
 std::vector<SOCKET> clients;
 std::mutex clientsMutex;
-std::atomic<bool> running(true);
+std::atomic<bool> applicationRunning(true);
 SOCKET listenSocket;
 
 void signalHandler(int signum)
 {
     std::cout << "\nInterrupt signal (" << signum << ") received.\n";
-    running = false;
+    applicationRunning = false;
     // Close the listening socket to unblock the accept() call
     closesocket(listenSocket);
 }
@@ -54,7 +54,7 @@ void cleanupWinsock()
 void handleClient(SOCKET clientSocket)
 {
     char buffer[1024];
-    while (running)
+    while (applicationRunning)
     {
         int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
         if (bytesReceived > 0)
@@ -75,12 +75,12 @@ void handleClient(SOCKET clientSocket)
 
 void acceptClients(SOCKET listenSocket)
 {
-    while (running)
+    while (applicationRunning)
     {
         SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
         if (clientSocket == INVALID_SOCKET)
         {
-            if (running)
+            if (applicationRunning)
             {
                 std::cerr << "accept failed: " << SOCKET_ERROR_CODE << std::endl;
             }
@@ -108,14 +108,14 @@ void broadcastToClients(const std::string& message)
 void userInputHandler()
 {
     std::string input;
-    while (running)
+    while (applicationRunning)
     {
         std::cout << "Enter command to send to clients (or 'quit' to exit): ";
         std::getline(std::cin, input);
 
         if (input == "quit")
         {
-            running = false;
+            applicationRunning = false;
             closesocket(listenSocket);
             break;
         }
