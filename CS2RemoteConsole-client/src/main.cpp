@@ -119,19 +119,30 @@ void setupLogging()
 
 int main()
 {
-    setupLogging();
-    signal(SIGINT, signalHandler);
-
-    if (!setupConfig() || !setupApplicationWinsock())
+    try
     {
+        setupLogging();
+        signal(SIGINT, signalHandler);
+
+        if (!setupConfig() || !setupApplicationWinsock())
+        {
+            return 1;
+        }
+
+        cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
+        remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
+
+        userInputHandler();
+        gracefulShutdown();
+    }
+    catch (const std::exception& e)
+    {
+        spdlog::error("Unhandled exception: {}", e.what());
+        return 1;
+    } catch (...)
+    {
+        spdlog::error("Unhandled unknown exception.");
         return 1;
     }
-
-    cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
-    remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
-
-    userInputHandler();
-
-    gracefulShutdown();
     return 0;
 }

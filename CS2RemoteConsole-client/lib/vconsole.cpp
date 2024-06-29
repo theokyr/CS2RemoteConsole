@@ -34,7 +34,7 @@ bool VConsole::connect(const std::string& ip, int port)
         return false;
     }
 
-    spdlog::info("Connected to VConsole at {}:{}", ip, port);
+    spdlog::info("[lib] Connected to VConsole at {}:{}", ip, port);
     return true;
 }
 
@@ -109,7 +109,7 @@ void VConsole::processIncomingData()
 
         VConChunk* header = reinterpret_cast<VConChunk*>(chunkBuf.data());
         std::string msgType(header->type, 4);
-        // spdlog::debug("Processing message type: {}, version: {}, length: {}, handle: {}",
+        // spdlog::debug("[lib] Processing message type: {}, version: {}, length: {}, handle: {}",
         //               msgType, header->version, header->length, header->handle);
         processPacket(msgType, chunkBuf);
     }
@@ -120,7 +120,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     if (msgType == "AINF")
     {
         AINF ainf = parseAINF(chunkBuf);
-        spdlog::debug("Processed AINF packet");
+        spdlog::debug("[lib] Processed AINF packet");
     }
     else if (msgType == "ADON")
     {
@@ -135,7 +135,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     {
         CHAN chan = parseCHAN(chunkBuf);
         channels = chan.channels;
-        spdlog::debug("Processed CHAN packet, added {} channels", chan.channels.size());
+        spdlog::debug("[lib] Processed CHAN packet, added {} channels", chan.channels.size());
     }
     else if (msgType == "PRNT")
     {
@@ -148,6 +148,8 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
                 prnt.message = stripNonAscii(prnt.message);
                 onPRNTReceived(it->name, prnt.message);
             }
+
+            onPRNTReceived("TBA", prnt.message);
         }
     }
     else if (msgType == "CVAR")
@@ -162,7 +164,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "CFGV")
     {
         CFGV cfgv = parseCFGV(chunkBuf);
-        spdlog::debug("Processed CFGV packet: {} = {}", cfgv.variable, cfgv.value);
+        spdlog::debug("[lib] Processed CFGV packet: {} = {}", cfgv.variable, cfgv.value);
     }
     else
     {
@@ -242,31 +244,57 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
     CHAN chan;
     const char* data = chunkBuf.data() + sizeof(VConChunk);
     chan.numChannels = ntohs(*reinterpret_cast<const uint16_t*>(data));
-    data += 2;
+    data += sizeof(uint16_t);
+
+    chan.channels.reserve(chan.numChannels); // Reserve space for efficiency
     for (int i = 0; i < chan.numChannels; ++i)
     {
         Channel channel;
-        memcpy(&channel, data, sizeof(Channel));
-        channel.id = ntohl(channel.id);
-        channel.unknown1 = ntohl(channel.unknown1);
-        channel.unknown2 = ntohl(channel.unknown2);
-        channel.verbosity_default = ntohl(channel.verbosity_default);
-        channel.verbosity_current = ntohl(channel.verbosity_current);
-        channel.text_RGBA_override = ntohl(channel.text_RGBA_override);
+        channel.id = ntohl(*reinterpret_cast<const int32_t*>(data));
+        data += sizeof(int32_t);
+
+        channel.unknown1 = ntohl(*reinterpret_cast<const int32_t*>(data));
+        data += sizeof(int32_t);
+
+        channel.unknown2 = ntohl(*reinterpret_cast<const int32_t*>(data));
+        data += sizeof(int32_t);
+
+        channel.verbosity_default = ntohl(*reinterpret_cast<const int32_t*>(data));
+        data += sizeof(int32_t);
+
+        channel.verbosity_current = ntohl(*reinterpret_cast<const int32_t*>(data));
+        data += sizeof(int32_t);
+
+        uint8_t R = *reinterpret_cast<const uint8_t*>(data++);
+        uint8_t G = *reinterpret_cast<const uint8_t*>(data++);
+        uint8_t B = *reinterpret_cast<const uint8_t*>(data++);
+        uint8_t A = *reinterpret_cast<const uint8_t*>(data++);
+        channel.text_RGBA_override = (R << 24) | (G << 16) | (B << 8) | A;
+
+        memcpy(channel.name, data, sizeof(channel.name));
+        channel.name[sizeof(channel.name) - 1] = '\0'; // Ensure null termination
+        data += sizeof(channel.name);
+
         chan.channels.push_back(channel);
-        data += sizeof(Channel);
     }
+
+    spdlog::debug("Parsed CHAN packet with {} channels", chan.numChannels);
+    for (const auto& channel : chan.channels) {
+        spdlog::debug("Channel ID: {:08x}, Name: {}", channel.id, channel.name);
+    }
+
     return chan;
 }
 
-PRNT VConsole::parsePRNT(const std::vector<char>& chunkBuf) {
+PRNT VConsole::parsePRNT(const std::vector<char>& chunkBuf)
+{
     PRNT prnt;
     const char* data = chunkBuf.data() + sizeof(VConChunk);
     prnt.channelID = ntohl(*reinterpret_cast<const int32_t*>(data));
     memcpy(prnt.unknown, data + 4, 24);
     prnt.message = std::string(data + 28);
     prnt.message = stripNonAscii(prnt.message); // Strip non-ASCII characters
-    spdlog::info("({}): {}", prnt.channelID, prnt.message);
+    spdlog::info("[lib] ({}): {}", prnt.channelID, prnt.message);
     return prnt;
 }
 

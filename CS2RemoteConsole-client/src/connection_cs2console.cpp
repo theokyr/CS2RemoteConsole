@@ -153,15 +153,16 @@ void initializeCS2Connection()
     vconsole.setOnPRNTReceived([](const std::string& channelName, const std::string& message)
     {
         auto logger = spdlog::get(LOGGER_VCON);
+        logger->info("YOOOOOOOOO ");
     });
 
     vconsole.setOnCVARsLoaded([](const std::vector<Cvar>& cvars)
     {
-        // auto logger = spdlog::get(LOGGER_VCON);
-        // for (const auto& cvar : cvars)
-        // {
-        //     logger->info("CVAR loaded: {}", cvar.repr());
-        // }
+        auto logger = spdlog::get(LOGGER_VCON);
+        for (const auto& cvar : cvars)
+        {
+            logger->info("CVAR loaded: {}", cvar.name);
+        }
     });
 
     vconsole.setOnADONReceived([](const std::string& adonName)
