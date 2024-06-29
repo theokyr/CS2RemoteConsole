@@ -4,7 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include "lib/vconsole.h"
+#include "../lib/vconsole.h"
 
 #pragma once
 

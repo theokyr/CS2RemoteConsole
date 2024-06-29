@@ -158,22 +158,22 @@
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClCompile Include="config.cpp"/>
-        <ClCompile Include="connection_cs2console.cpp"/>
-        <ClCompile Include="connection_remoteserver.cpp"/>
         <ClCompile Include="lib\vconsole.cpp"/>
-        <ClCompile Include="main.cpp"/>
-        <ClCompile Include="utils.cpp"/>
+        <ClCompile Include="src\config.cpp"/>
+        <ClCompile Include="src\connection_cs2console.cpp"/>
+        <ClCompile Include="src\connection_remoteserver.cpp"/>
+        <ClCompile Include="src\main.cpp"/>
+        <ClCompile Include="src\utils.cpp"/>
     </ItemGroup>
     <ItemGroup>
-        <ClInclude Include="config.h"/>
-        <ClInclude Include="connection_cs2console.h"/>
-        <ClInclude Include="connection_remoteserver.h"/>
         <ClInclude Include="lib\messages.h" />
         <ClInclude Include="lib\vconsole.h"/>
-        <ClInclude Include="logging.h"/>
-        <ClInclude Include="payloads.h"/>
-        <ClInclude Include="utils.h"/>
+        <ClInclude Include="src\config.h"/>
+        <ClInclude Include="src\connection_cs2console.h"/>
+        <ClInclude Include="src\connection_remoteserver.h"/>
+        <ClInclude Include="src\logging.h"/>
+        <ClInclude Include="src\payloads.h"/>
+        <ClInclude Include="src\utils.h"/>
     </ItemGroup>
     <ItemGroup>
         <Content Include="config.ini"/>
