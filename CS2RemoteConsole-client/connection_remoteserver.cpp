@@ -94,8 +94,9 @@ void listenForRemoteServerData()
             buffer[bytesReceived] = '\0';
             logger->info("[Connection] [RemoteServer] Received '{}' from remote server", buffer);
             // Forward the command to CS2 console
-            auto payload = create_command_payload(buffer);
-            sendPayloadToCS2Console(payload);
+            auto payload = createCommandPayload(buffer);
+            auto cmd = std::string(payload.begin(), payload.end());
+            sendPayloadToCS2Console(cmd);
         }
         else if (bytesReceived == 0)
         {

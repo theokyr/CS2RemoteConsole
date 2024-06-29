@@ -13,19 +13,19 @@
 #include "connection_remoteserver.h"
 #include "logging.h"
 
-std::atomic<bool> running(true);
+std::atomic<bool> applicationRunning(true);
 
 void signalHandler(int signum)
 {
     auto logger = spdlog::get(LOGGER_APPLICATION);
     logger->info("[Main] Interrupt signal {} received.", signum);
-    running = false;
+    applicationRunning = false;
 }
 
 void userInputHandler()
 {
     auto logger = spdlog::get(LOGGER_APPLICATION);
-    while (running)
+    while (applicationRunning)
     {
         // std::cout << ">> ";
         std::string input;
@@ -36,7 +36,7 @@ void userInputHandler()
         if (input == "quit" || input == "exit" || input == "x")
         {
             logger->info("[Main] Exit command received. Initiating shutdown...");
-            running = false;
+            applicationRunning = false;
             break;
         }
 
@@ -45,8 +45,7 @@ void userInputHandler()
             if (input.length() > 4)
             {
                 std::string command = input.substr(4);
-                auto payload = create_command_payload(command);
-                sendPayloadToCS2Console(payload);
+                sendPayloadToCS2Console(command);
                 logger->info("[Main] Sending command {} to CS2 Console...", command);
             }
             else
@@ -85,7 +84,7 @@ void gracefulShutdown()
     auto logger = spdlog::get(LOGGER_APPLICATION);
     logger->info("Initiating graceful shutdown...");
 
-    running = false;
+    applicationRunning = false;
 
     cleanupCS2Console();
     cleanupRemoteServer();
@@ -123,7 +122,7 @@ int main()
     setupLogging();
     signal(SIGINT, signalHandler);
 
-    if (!setupConfig() || !setupWinsock())
+    if (!setupConfig() || !setupApplicationWinsock())
     {
         return 1;
     }

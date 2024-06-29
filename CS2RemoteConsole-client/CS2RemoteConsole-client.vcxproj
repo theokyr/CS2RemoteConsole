@@ -161,24 +161,16 @@
         <ClCompile Include="config.cpp"/>
         <ClCompile Include="connection_cs2console.cpp"/>
         <ClCompile Include="connection_remoteserver.cpp"/>
-        <ClCompile Include="lib\channel.cpp"/>
-        <ClCompile Include="lib\messages\adon.cpp"/>
-        <ClCompile Include="lib\messages\ainf.cpp"/>
-        <ClCompile Include="lib\messages\cfgv.cpp"/>
-        <ClCompile Include="lib\messages\chan.cpp"/>
-        <ClCompile Include="lib\messages\cmnd.cpp"/>
-        <ClCompile Include="lib\messages\cvar.cpp"/>
-        <ClCompile Include="lib\messages\prnt.cpp"/>
+        <ClCompile Include="lib\vconsole.cpp"/>
         <ClCompile Include="main.cpp"/>
         <ClCompile Include="utils.cpp"/>
+    </ItemGroup>
+    <ItemGroup>
         <ClInclude Include="config.h"/>
         <ClInclude Include="connection_cs2console.h"/>
         <ClInclude Include="connection_remoteserver.h"/>
-        <ClInclude Include="lib\messages\adon.h"/>
-        <ClInclude Include="lib\messages\ainf.h"/>
-        <ClInclude Include="lib\messages\cfgv.h"/>
-        <ClInclude Include="lib\messages\cvar.h"/>
-        <ClInclude Include="lib\messages\vfcs.h"/>
+        <ClInclude Include="lib\messages.h" />
+        <ClInclude Include="lib\vconsole.h"/>
         <ClInclude Include="logging.h"/>
         <ClInclude Include="payloads.h"/>
         <ClInclude Include="utils.h"/>

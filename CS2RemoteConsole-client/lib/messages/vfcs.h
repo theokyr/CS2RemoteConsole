@@ -1,6 +1,0 @@
-﻿#pragma once
-#include <vector>
-
-const std::vector<unsigned char> VFCS_CONSOLE_INIT_PAYLOAD = {
-    'V', 'F', 'C', 'S', 0x00, 0xD4, 0x00, 0x00, 0x00, 0x0D, 0x00, 0x00, 0x01
-};
