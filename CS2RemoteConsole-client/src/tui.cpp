@@ -55,7 +55,6 @@ void TUI::shutdown()
 {
     m_running = false;
     destroyWindows();
-    // endwin();
 }
 
 void TUI::setCommandCallback(std::function<void(const std::string&)> callback)
@@ -93,10 +92,11 @@ void TUI::createWindows()
 
 void TUI::resizeWindows(int height, int width)
 {
-    // Define window heights
+    // Calculate window sizes
     int inputHeight = 3;
-    int logHeight = inputHeight;
-    int consoleHeight = height - inputHeight - logHeight;
+    int remainingHeight = height - inputHeight;
+    int logHeight = remainingHeight / 3;
+    int consoleHeight = remainingHeight - logHeight;
 
     // If windows don't exist, create them
     if (!m_logWindow)
@@ -221,7 +221,6 @@ void TUI::handleInput()
 
 void TUI::handleResize()
 {
-    // endwin();
     refresh();
     clear();
 

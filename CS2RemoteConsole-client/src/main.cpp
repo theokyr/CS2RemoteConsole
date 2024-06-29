@@ -15,6 +15,7 @@
 #include "logging.h"
 #include "tui.h"
 #include "tui_sink.h"
+#include <windows.h>
 
 std::atomic<bool> applicationRunning(true);
 TUI tui;
@@ -82,6 +83,8 @@ int main()
     try
     {
         std::thread uiThread(tuiThread);
+
+        Sleep(1000);
         
         setupLogging();
         signal(SIGINT, signalHandler);
