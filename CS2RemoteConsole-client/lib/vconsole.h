@@ -1,12 +1,11 @@
 ﻿#ifndef VCONSOLE_H
 #define VCONSOLE_H
 
-#include <algorithm>
 #include <string>
 #include <vector>
 #include <functional>
+#include <algorithm>
 #include <iterator>
-
 #include "messages.h"
 
 #ifdef _WIN32
@@ -17,19 +16,22 @@
 #include <arpa/inet.h>
 #endif
 
-struct VConChunk {
+struct VConChunk
+{
     char type[4];
     uint32_t version;
     uint16_t length;
     uint16_t handle;
 };
 
-class VConsole {
+class VConsole
+{
 public:
     VConsole();
     ~VConsole();
 
-    std::string stripNonAscii(const std::string& input) {
+    std::string stripNonAscii(const std::string& input)
+    {
         std::string output;
         std::copy_if(input.begin(), input.end(), std::back_inserter(output),
                      [](unsigned char c) { return c <= 127; });
@@ -62,7 +64,7 @@ private:
     std::string adonName;
 
     void processPacket(const std::string& msgType, const std::vector<char>& chunkBuf);
-    
+
     AINF parseAINF(const std::vector<char>& chunkBuf);
     ADON parseADON(const std::vector<char>& chunkBuf);
     CHAN parseCHAN(const std::vector<char>& chunkBuf);

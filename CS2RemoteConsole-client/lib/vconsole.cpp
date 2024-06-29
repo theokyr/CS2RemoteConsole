@@ -140,16 +140,25 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "PRNT")
     {
         PRNT prnt = parsePRNT(chunkBuf);
-        if (onPRNTReceived)
+        auto it = std::find_if(channels.begin(), channels.end(), [&](const Channel& ch) { return ch.id == prnt.channelID; });
+        if (it != channels.end())
         {
-            auto it = std::find_if(channels.begin(), channels.end(), [&](const Channel& ch) { return ch.id == prnt.channelID; });
-            if (it != channels.end())
+            prnt.message = stripNonAscii(prnt.message);
+            spdlog::info("PRNT ({}): {}", it->name, prnt.message);
+
+            if (onPRNTReceived)
             {
-                prnt.message = stripNonAscii(prnt.message);
                 onPRNTReceived(it->name, prnt.message);
             }
+        }
+        else
+        {
+            spdlog::warn("PRNT ({unknown}-{}]: {}", prnt.channelID, prnt.message);
 
-            onPRNTReceived("TBA", prnt.message);
+            if (onPRNTReceived)
+            {
+                onPRNTReceived("unknown", prnt.message);
+            }
         }
     }
     else if (msgType == "CVAR")
@@ -279,7 +288,8 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
     }
 
     spdlog::debug("Parsed CHAN packet with {} channels", chan.numChannels);
-    for (const auto& channel : chan.channels) {
+    for (const auto& channel : chan.channels)
+    {
         spdlog::debug("Channel ID: {:08x}, Name: {}", channel.id, channel.name);
     }
 
@@ -294,7 +304,6 @@ PRNT VConsole::parsePRNT(const std::vector<char>& chunkBuf)
     memcpy(prnt.unknown, data + 4, 24);
     prnt.message = std::string(data + 28);
     prnt.message = stripNonAscii(prnt.message); // Strip non-ASCII characters
-    spdlog::info("[lib] ({}): {}", prnt.channelID, prnt.message);
     return prnt;
 }
 
