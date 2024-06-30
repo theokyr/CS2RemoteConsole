@@ -4,6 +4,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole-client", "
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CS2RemoteConsole-server", "CS2RemoteConsole-server\CS2RemoteConsole-server.vcxproj", "{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvconsole", "libvconsole\libvconsole.vcxproj", "{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -28,5 +30,13 @@ Global
 		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|Win32.Build.0 = Release|Win32
 		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|x64.ActiveCfg = Release|x64
 		{3FAB76DA-C5DB-4F79-8F3F-AEC1D3822297}.Release|x64.Build.0 = Release|x64
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Debug|Win32.Build.0 = Debug|Win32
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Debug|x64.ActiveCfg = Debug|x64
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Debug|x64.Build.0 = Debug|x64
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Release|Win32.ActiveCfg = Release|Win32
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Release|Win32.Build.0 = Release|Win32
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Release|x64.ActiveCfg = Release|x64
+		{002FAA98-AC67-4F97-BB59-6E7F5A5B05D2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

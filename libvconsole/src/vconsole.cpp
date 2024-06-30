@@ -1,10 +1,10 @@
 ﻿#include "vconsole.h"
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <cstring>
 
 VConsole::VConsole() : clientSocket(INVALID_SOCKET)
 {
+    setupWinsock();
 }
 
 VConsole::~VConsole()
@@ -17,7 +17,6 @@ bool VConsole::connect(const std::string& ip, int port)
     clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clientSocket == INVALID_SOCKET)
     {
-        spdlog::error("Failed to create socket: {}", WSAGetLastError());
         return false;
     }
 
@@ -28,13 +27,11 @@ bool VConsole::connect(const std::string& ip, int port)
 
     if (::connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
     {
-        spdlog::error("Connection failed: {}", WSAGetLastError());
         closesocket(clientSocket);
         clientSocket = INVALID_SOCKET;
         return false;
     }
 
-    spdlog::info("[libvconsole] Connected to VConsole at {}:{}", ip, port);
     return true;
 }
 
@@ -67,7 +64,6 @@ int VConsole::readChunk(std::vector<char>& outputBuf)
         {
             return 0;
         }
-        spdlog::error("Socket Read Error ({})", n);
         return -1;
     }
 
@@ -85,7 +81,6 @@ int VConsole::readChunk(std::vector<char>& outputBuf)
         {
             return 0;
         }
-        spdlog::error("Socket Read Error ({})", n);
         return -1;
     }
 
@@ -102,7 +97,6 @@ void VConsole::processIncomingData()
         {
             if (result < 0)
             {
-                spdlog::error("Error reading chunk");
             }
             break;
         }
@@ -120,7 +114,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     if (msgType == "AINF")
     {
         AINF ainf = parseAINF(chunkBuf);
-        spdlog::debug("[libvconsole] Processed AINF packet");
     }
     else if (msgType == "ADON")
     {
@@ -135,7 +128,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     {
         CHAN chan = parseCHAN(chunkBuf);
         channels = chan.channels;
-        spdlog::debug("[libvconsole] Processed CHAN packet, added {} channels", chan.channels.size());
     }
     else if (msgType == "PRNT")
     {
@@ -144,7 +136,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
         if (it != channels.end())
         {
             prnt.message = stripNonAscii(prnt.message);
-            spdlog::info("PRNT ({}): {}", it->name, prnt.message);
 
             if (onPRNTReceived)
             {
@@ -153,7 +144,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
         }
         else
         {
-            spdlog::warn("PRNT ({unknown}-{}]: {}", prnt.channelID, prnt.message);
 
             if (onPRNTReceived)
             {
@@ -173,11 +163,9 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "CFGV")
     {
         CFGV cfgv = parseCFGV(chunkBuf);
-        spdlog::debug("[libvconsole] Processed CFGV packet: {} = {}", cfgv.variable, cfgv.value);
     }
     else
     {
-        spdlog::warn("Unknown message type: {}", msgType);
     }
 }
 
@@ -206,7 +194,6 @@ bool setupWinsock()
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     {
-        spdlog::error("WSAStartup failed");
         return false;
     }
     return true;
@@ -285,12 +272,6 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
         data += sizeof(channel.name);
 
         chan.channels.push_back(channel);
-    }
-
-    spdlog::debug("Parsed CHAN packet with {} channels", chan.numChannels);
-    for (const auto& channel : chan.channels)
-    {
-        spdlog::debug("Channel ID: {:08x}, Name: {}", channel.id, channel.name);
     }
 
     return chan;

@@ -16,6 +16,12 @@
 #include <arpa/inet.h>
 #endif
 
+#pragma once
+
+#ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
 struct VConChunk
 {
     char type[4];
