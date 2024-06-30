@@ -4,6 +4,7 @@
 #include <csignal>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/callback_sink.h>
 
 #include "config.h"
 #include "payloads.h"
@@ -13,7 +14,6 @@
 #include "connection_remoteserver.h"
 #include "logging.h"
 #include "tui.h"
-#include "tui_sink.h"
 #include <windows.h>
 
 std::atomic<bool> applicationRunning(true);
@@ -21,15 +21,13 @@ TUI tui;
 
 void signalHandler(int signum)
 {
-    auto logger = spdlog::get(LOGGER_APPLICATION);
-    logger->info("[Main] Interrupt signal {} received.", signum);
+    spdlog::info("[Main] Interrupt signal {} received.", signum);
     applicationRunning = false;
 }
 
 void gracefulShutdown()
 {
-    auto logger = spdlog::get(LOGGER_APPLICATION);
-    logger->info("Initiating graceful shutdown...");
+    spdlog::info("Initiating graceful shutdown...");
 
     applicationRunning = false;
 
@@ -43,42 +41,25 @@ void gracefulShutdown()
     std::cout << "CS2RemoteConsole shutdown complete. Bye-bye!..." << std::endl;
 }
 
-void setupLogging()
-{
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log");
-    auto tui_sink = std::make_shared<tui_sink_mt>(tui);
-    
-    auto default_logger = std::make_shared<spdlog::logger>("default", file_sink);
-    spdlog::set_level(spdlog::level::debug);
-    default_logger->sinks().push_back(tui_sink);
-    spdlog::set_default_logger(default_logger);
-    
-    auto application_logger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, tui_sink);
-    auto vconsole_logger = std::make_shared<spdlog::logger>(LOGGER_VCON, tui_sink);
-    auto remote_server_logger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, tui_sink);
-    
-    spdlog::register_logger(application_logger);
-    spdlog::register_logger(vconsole_logger);
-    spdlog::register_logger(remote_server_logger);
-}
-
 int main()
 {
     try
     {
+        spdlog::set_level(spdlog::level::debug);
+        std::vector<spdlog::sink_ptr> applicationSinks;
+        applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
+        auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
+        set_default_logger(applicationLogger);
 
         if (!setupConfig() || !setupApplicationWinsock())
         {
             return 1;
         }
-        
+
         tui.init();
-        
-        setupLogging();
-        
-        auto logger = spdlog::get(LOGGER_APPLICATION);
-        logger->info("Starting CS2RemoteConsole application");
-        
+        tui.registerChannel(APPLICATION_SPECIAL_CHANNEL_ID, "Log", 4285057279);
+        tui.setupLoggerCallbackSink();
+
         signal(SIGINT, signalHandler);
 
         tui.setCommandCallback([](const std::string& command)
@@ -100,11 +81,13 @@ int main()
             tui.addConsoleMessage(PRNT.channelID, PRNT.message);
         });
 
+        spdlog::info("Starting CS2RemoteConsole application");
+
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 
         tui.run();
-        
+
         gracefulShutdown();
     }
     catch (const std::exception& e)

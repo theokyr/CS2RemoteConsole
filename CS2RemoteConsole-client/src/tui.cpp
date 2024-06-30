@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/callback_sink.h>
 
 #include "logging.h"
 
@@ -175,10 +176,10 @@ void TUI::drawConsoleWindow()
         std::string prefix;
         short colorPairId = 0;
 
-        if (currentMessage.channelId == -694201337)
+        if (currentMessage.channelId == APPLICATION_SPECIAL_CHANNEL_ID)
         {
-            prefix = "[LOG] ";
-            colorPairId = m_colorCache[0xFFFFFFFF]; // White color for logs
+            prefix = "";
+            colorPairId = m_colorCache[4285057279];
         }
         else if (channelIt != m_channels.end())
         {
@@ -237,7 +238,7 @@ void TUI::handleInput()
         if (m_commandCallback && !m_inputBuffer.empty())
         {
             m_commandCallback(m_inputBuffer);
-            addConsoleMessage(-1, "> " + m_inputBuffer);
+            addConsoleMessage(APPLICATION_SPECIAL_CHANNEL_ID, "> " + m_inputBuffer);
             m_inputBuffer.clear();
             updateInputWindow();
         }
@@ -283,6 +284,18 @@ void TUI::handleInput()
             updateInputWindow();
         }
         break;
+    }
+}
+
+void TUI::setupLoggerCallbackSink()
+{
+    auto logger = spdlog::default_logger();
+    if (logger)
+    {
+        logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([this](const spdlog::details::log_msg& msg)
+        {
+            addConsoleMessage(APPLICATION_SPECIAL_CHANNEL_ID, std::string(msg.payload.begin(), msg.payload.end()));
+        }));
     }
 }
 

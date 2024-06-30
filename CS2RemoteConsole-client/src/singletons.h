@@ -4,12 +4,12 @@
 #pragma once
 
 #include "vconsole.h"
-#include <memory>
-#include <mutex>
 
-class VConsoleSingleton {
+class VConsoleSingleton
+{
 public:
-    static VConsole& getInstance() {
+    static VConsole& getInstance()
+    {
         static VConsole instance;
         return instance;
     }

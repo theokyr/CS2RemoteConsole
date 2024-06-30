@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <spdlog/spdlog.h>
 
+const int APPLICATION_SPECIAL_CHANNEL_ID = -1337;
+
 struct ConsoleChannel
 {
     std::string name;
@@ -44,6 +46,7 @@ public:
     void addConsoleMessage(int channelId, const std::string& message);
     void registerChannel(int id, const std::string& name, uint32_t color);
     void setConsoleDirty(bool dirty);
+    void setupLoggerCallbackSink();
 
 private:
     static const size_t MAX_CONSOLE_MESSAGES = 10000;
