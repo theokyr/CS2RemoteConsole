@@ -103,9 +103,27 @@ int main()
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 
         auto& vconsole = VConsoleSingleton::getInstance();
-        vconsole.setOnPRNTReceived([](const std::string& source, const std::string& message)
+        vconsole.setOnPRNTReceived([](const std::string& source, const PRNT& PRNT)
         {
-            tui.addConsoleMessage(source + ": " + message);
+            auto& vconsole = VConsoleSingleton::getInstance();
+            auto& channels = vconsole.channels;
+            auto it = std::find_if(channels.begin(), channels.end(), [&](const Channel& ch) { return ch.id == PRNT.channelID; });
+            if (it != channels.end())
+            {
+                std::string colorcode = getColorCode(it->text_RGBA_override);
+
+
+
+                std::string channelName = std::string(it->name);
+                std::string message = std::string(PRNT.message);
+
+                tui.addConsoleMessage(channelName, message, it->text_RGBA_override);
+            }
+            else
+            {
+                tui.addConsoleMessage("unknown", "", it->text_RGBA_override);
+            }
+            
         });
 
         // Main application loop

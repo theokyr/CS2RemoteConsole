@@ -43,35 +43,38 @@
 // }
 
 // Color codes and category mappings
-// std::string getColorCode(uint32_t color)
-// {
-//     uint8_t r = color & 0xFF;
-//     uint8_t g = (color >> 8) & 0xFF;
-//     uint8_t b = (color >> 16) & 0xFF;
-//     uint8_t a = (color >> 24) & 0xFF;
-//
-//     if (a == 0)
-//     {
-//         return "\033[0m"; // Reset to default color
-//     }
-//
-//     // Special color handling
-//     if (color == 0xFFFF00FF)
-//     {
-//         return "\033[1;33m"; // Bright yellow for warnings
-//     }
-//     else if (color == 0xFF0000FF)
-//     {
-//         return "\033[1;31m"; // Bright red for errors
-//     }
-//     else if (color == 0xFF00FFFF)
-//     {
-//         return "\033[1;35m"; // Bright magenta for special messages
-//     }
-//
-//     // Default to RGB color
-//     return "\033[38;2;" + std::to_string(r) + ";" + std::to_string(g) + ";" + std::to_string(b) + "m";
-// }
+ std::string getColorCode(uint32_t color)
+ {
+     //if (color != 0)
+         //printf(":^)");
+
+     uint8_t r = (color >> 24) & 0xFF;
+     uint8_t g = (color >> 16) & 0xFF;
+     uint8_t b = (color >> 8) & 0xFF;
+     uint8_t a = (color >> 0) & 0xFF;
+
+     if (a == 0)
+     {
+         return "\033[0m"; // Reset to default color
+     }
+
+     // Special color handling
+     if (color == 0xFFFF00FF)
+     {
+         return "\033[1;33m"; // Bright yellow for warnings
+     }
+     else if (color == 0xFF0000FF)
+     {
+         return "\033[1;31m"; // Bright red for errors
+     }
+     else if (color == 0xFF00FFFF)
+     {
+         return "\033[1;35m"; // Bright magenta for special messages
+     }
+
+     // Default to RGB color
+     return "\033[38;2;" + std::to_string(r) + ";" + std::to_string(g) + ";" + std::to_string(b) + "m";
+ }
 //
 // std::string getCategoryName(uint16_t category, uint32_t channelID)
 // {

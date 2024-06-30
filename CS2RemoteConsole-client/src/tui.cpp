@@ -72,10 +72,15 @@ void TUI::addLogMessage(const std::string& message)
     }
 }
 
-void TUI::addConsoleMessage(const std::string& message)
+void TUI::addConsoleMessage(std::string channelName, std::string message, uint32_t color)
 {
     std::lock_guard<std::mutex> lock(m_consoleMutex);
-    m_consoleMessages.push_back(message);
+    ConsoleMessage cMessage;
+    cMessage.channel_name = channelName;
+    cMessage.message = message;
+    cMessage.color = color;
+
+    m_consoleMessages.push_back(cMessage);
     if (m_consoleMessages.size() > MAX_CONSOLE_MESSAGES)
     {
         m_consoleMessages.erase(m_consoleMessages.begin());
@@ -168,7 +173,23 @@ void TUI::drawConsoleWindow()
     int startIndex = std::max(0, static_cast<int>(m_consoleMessages.size()) - maxLines);
     for (int i = 0; i < maxLines && (startIndex + i) < static_cast<int>(m_consoleMessages.size()); ++i)
     {
-        mvwprintw(m_consoleWindow, i + 1, 1, "%s", m_consoleMessages[startIndex + i].c_str());
+        auto currentMessage = m_consoleMessages[startIndex + i];
+        int color = currentMessage.color + 256;  // Using 0 for dither
+
+        // Create a new color pair
+        int pair = color + 3;  // Avoid using 0
+
+        pair = 0x00FFFF00 + 256 + 1;
+
+        init_pair(1, COLOR_RED, COLOR_BLACK);
+
+        init_pair(pair, color, COLOR_BLACK);
+
+        //wattrset(m_consoleWindow, COLOR_PAIR(pair)); //set color
+        attrset(COLOR_PAIR(3));
+        wprintw(m_consoleWindow, "%s", m_consoleMessages[startIndex + i].message.c_str());
+        //attroff(COLOR_PAIR(1)); //set color
+        //wattroff(m_consoleWindow, COLOR_PAIR(pair));//unset color
     }
 
     wnoutrefresh(m_consoleWindow);
@@ -195,7 +216,8 @@ void TUI::handleInput()
         if (m_commandCallback && !m_inputBuffer.empty())
         {
             m_commandCallback(m_inputBuffer);
-            addConsoleMessage("> " + m_inputBuffer);
+            std::string channelName = std::string("> ");
+            addConsoleMessage(channelName, m_inputBuffer);
             m_inputBuffer.clear();
         }
         break;
