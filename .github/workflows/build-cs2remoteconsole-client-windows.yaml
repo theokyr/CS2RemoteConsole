@@ -18,7 +18,8 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1.1
@@ -36,7 +37,7 @@ jobs:
       - name: Upload libvconsole artifact
         uses: actions/upload-artifact@v2
         with:
-          name: libvconsole
+          name: libvconsole-build
           path: |
             libvconsole/x64/Release/libvconsole.lib
             libvconsole/src/*.h
@@ -46,7 +47,8 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1.1
@@ -59,14 +61,20 @@ jobs:
       - name: Download libvconsole artifact
         uses: actions/download-artifact@v2
         with:
-          name: libvconsole
-          path: libvconsole
+          name: libvconsole-build
+          path: libvconsole-build
 
-      - name: Copy libvconsole files
+      - name: Display structure of downloaded files
+        run: dir /s libvconsole-build
+        shell: cmd
+
+      - name: Prepare libvconsole for CS2RemoteConsole-client
         run: |
-          mkdir -p CS2RemoteConsole-client/include/libvconsole
-          copy libvconsole\libvconsole.lib CS2RemoteConsole-client\lib\
-          copy libvconsole\src\*.h CS2RemoteConsole-client\include\libvconsole
+          mkdir -p CS2RemoteConsole-client\lib
+          mkdir -p CS2RemoteConsole-client\include\libvconsole
+          copy libvconsole-build\libvconsole.lib CS2RemoteConsole-client\lib\
+          copy libvconsole-build\*.h CS2RemoteConsole-client\include\libvconsole\
+        shell: cmd
 
       - name: Build CS2RemoteConsole-client
         run: |
@@ -76,5 +84,5 @@ jobs:
       - name: Upload CS2RemoteConsole-client artifact
         uses: actions/upload-artifact@v2
         with:
-          name: CS2RemoteConsole-client
+          name: CS2RemoteConsole-client-build
           path: CS2RemoteConsole-client/x64/Release/CS2RemoteConsole-client.exe
