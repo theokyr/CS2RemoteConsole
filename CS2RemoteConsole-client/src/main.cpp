@@ -9,11 +9,22 @@
 #include "config.h"
 #include "payloads.h"
 #include "utils.h"
+#include "singletons.h"
 #include "connection_cs2console.h"
 #include "connection_remoteserver.h"
 #include "logging.h"
+#include "tui.h"
+#include "tui_sink.h"
+#include <windows.h>
 
 std::atomic<bool> applicationRunning(true);
+TUI tui;
+
+void tuiThread()
+{
+    tui.init();
+    tui.run();
+}
 
 void signalHandler(int signum)
 {
@@ -22,69 +33,14 @@ void signalHandler(int signum)
     applicationRunning = false;
 }
 
-void userInputHandler()
-{
-    auto logger = spdlog::get(LOGGER_APPLICATION);
-    while (applicationRunning)
-    {
-        // std::cout << ">> ";
-        std::string input;
-        std::getline(std::cin, input);
-
-        if (input.empty()) continue;
-
-        if (input == "quit" || input == "exit" || input == "x")
-        {
-            logger->info("[Main] Exit command received. Initiating shutdown...");
-            applicationRunning = false;
-            break;
-        }
-
-        if (input.substr(0, 3) == "cmd")
-        {
-            if (input.length() > 4)
-            {
-                std::string command = input.substr(4);
-                sendPayloadToCS2Console(command);
-                logger->info("[Main] Sending command {} to CS2 Console...", command);
-            }
-            else
-            {
-                logger->error("[Main] Invalid command format. Use 'cmd <your_command>'");
-            }
-        }
-        else
-        {
-            switch (input[0])
-            {
-            case 'y':
-                if (!listeningCS2)
-                {
-                    listeningCS2 = true;
-                    cs2ListenerThread = std::thread(listenForCS2ConsoleData);
-                    logger->info("[Main] Started CS2 console output listening thread");
-                }
-                else
-                {
-                    listeningCS2 = false;
-                    if (cs2ListenerThread.joinable()) cs2ListenerThread.join();
-                    logger->info("[Main] Stopped CS2 console output listening thread");
-                }
-                break;
-            default:
-                logger->warn("Unknown command");
-                break;
-            }
-        }
-    }
-}
-
 void gracefulShutdown()
 {
     auto logger = spdlog::get(LOGGER_APPLICATION);
     logger->info("Initiating graceful shutdown...");
 
     applicationRunning = false;
+
+    tui.shutdown();
 
     cleanupCS2Console();
     cleanupRemoteServer();
@@ -98,21 +54,26 @@ void setupLogging()
 {
     spdlog::set_level(spdlog::level::debug);
 
+    auto tui_sink = std::make_shared<tui_sink_mt>(tui);
+
     std::vector<spdlog::sink_ptr> applicationSinks;
-    applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
+    applicationSinks.push_back(tui_sink);
     auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
     register_logger(applicationLogger);
 
     std::vector<spdlog::sink_ptr> protocolSinks;
-    protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     protocolSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/protocol.log"));
+    protocolSinks.push_back(tui_sink);
     auto protocolLogger = std::make_shared<spdlog::logger>(LOGGER_VCON, begin(protocolSinks), end(protocolSinks));
     register_logger(protocolLogger);
 
     std::vector<spdlog::sink_ptr> remoteServerSinks;
-    remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+    // remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     remoteServerSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/remote.log"));
+    remoteServerSinks.push_back(tui_sink);
     auto remoteServerLogger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, begin(remoteServerSinks), end(remoteServerSinks));
     register_logger(remoteServerLogger);
 }
@@ -121,6 +82,10 @@ int main()
 {
     try
     {
+        std::thread uiThread(tuiThread);
+
+        Sleep(1000);
+        
         setupLogging();
         signal(SIGINT, signalHandler);
 
@@ -129,19 +94,43 @@ int main()
             return 1;
         }
 
+        tui.setCommandCallback([](const std::string& command)
+        {
+            sendPayloadToCS2Console(command);
+        });
+
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 
-        userInputHandler();
+        auto& vconsole = VConsoleSingleton::getInstance();
+        vconsole.setOnPRNTReceived([](const std::string& source, const std::string& message)
+        {
+            tui.addConsoleMessage(source + ": " + message);
+        });
+
+        // Main application loop
+        while (applicationRunning)
+        {
+            // Process any background tasks
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
         gracefulShutdown();
     }
     catch (const std::exception& e)
     {
         spdlog::error("Unhandled exception: {}", e.what());
+        cleanupCS2Console();
+        cleanupRemoteServer();
+        WSACleanup();
         return 1;
-    } catch (...)
+    }
+    catch (...)
     {
         spdlog::error("Unhandled unknown exception.");
+        cleanupCS2Console();
+        cleanupRemoteServer();
+        WSACleanup();
         return 1;
     }
     return 0;

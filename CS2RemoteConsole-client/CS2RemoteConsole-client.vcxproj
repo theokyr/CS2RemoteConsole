@@ -97,6 +97,8 @@
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
         <Link>
+            <AdditionalLibraryDirectories>./lib</AdditionalLibraryDirectories>
+            <AdditionalDependencies>.\lib\pdcurses_wide.lib;.\lib\pdcurses.lib</AdditionalDependencies>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
@@ -113,6 +115,8 @@
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
         <Link>
+            <AdditionalLibraryDirectories>./lib</AdditionalLibraryDirectories>
+            <AdditionalDependencies></AdditionalDependencies>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
@@ -131,6 +135,8 @@
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
         <Link>
+            <AdditionalLibraryDirectories>./lib</AdditionalLibraryDirectories>
+            <AdditionalDependencies>.\lib\pdcurses_wide.lib;.\lib\pdcurses.lib</AdditionalDependencies>
             <SubSystem>Console</SubSystem>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <OptimizeReferences>true</OptimizeReferences>
@@ -151,6 +157,8 @@
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
         <Link>
+            <AdditionalDependencies>.\lib\pdcurses_wide.lib;.\lib\pdcurses.lib</AdditionalDependencies>
+            <AdditionalLibraryDirectories>./lib</AdditionalLibraryDirectories>
             <SubSystem>Console</SubSystem>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <OptimizeReferences>true</OptimizeReferences>
@@ -158,21 +166,25 @@
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClCompile Include="lib\vconsole.cpp"/>
+        <ClCompile Include="libvconsole\vconsole.cpp"/>
         <ClCompile Include="src\config.cpp"/>
         <ClCompile Include="src\connection_cs2console.cpp"/>
         <ClCompile Include="src\connection_remoteserver.cpp"/>
         <ClCompile Include="src\main.cpp"/>
+        <ClCompile Include="src\tui.cpp"/>
         <ClCompile Include="src\utils.cpp"/>
     </ItemGroup>
     <ItemGroup>
-        <ClInclude Include="lib\messages.h" />
-        <ClInclude Include="lib\vconsole.h"/>
+        <ClInclude Include="libvconsole\messages.h"/>
+        <ClInclude Include="libvconsole\vconsole.h"/>
         <ClInclude Include="src\config.h"/>
         <ClInclude Include="src\connection_cs2console.h"/>
         <ClInclude Include="src\connection_remoteserver.h"/>
         <ClInclude Include="src\logging.h"/>
         <ClInclude Include="src\payloads.h"/>
+        <ClInclude Include="src\singletons.h" />
+        <ClInclude Include="src\tui.h"/>
+        <ClInclude Include="src\tui_sink.h" />
         <ClInclude Include="src\utils.h"/>
     </ItemGroup>
     <ItemGroup>

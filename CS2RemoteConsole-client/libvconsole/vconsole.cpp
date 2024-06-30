@@ -34,7 +34,7 @@ bool VConsole::connect(const std::string& ip, int port)
         return false;
     }
 
-    spdlog::info("[lib] Connected to VConsole at {}:{}", ip, port);
+    spdlog::info("[libvconsole] Connected to VConsole at {}:{}", ip, port);
     return true;
 }
 
@@ -109,7 +109,7 @@ void VConsole::processIncomingData()
 
         VConChunk* header = reinterpret_cast<VConChunk*>(chunkBuf.data());
         std::string msgType(header->type, 4);
-        // spdlog::debug("[lib] Processing message type: {}, version: {}, length: {}, handle: {}",
+        // spdlog::debug("[libvconsole] Processing message type: {}, version: {}, length: {}, handle: {}",
         //               msgType, header->version, header->length, header->handle);
         processPacket(msgType, chunkBuf);
     }
@@ -120,7 +120,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     if (msgType == "AINF")
     {
         AINF ainf = parseAINF(chunkBuf);
-        spdlog::debug("[lib] Processed AINF packet");
+        spdlog::debug("[libvconsole] Processed AINF packet");
     }
     else if (msgType == "ADON")
     {
@@ -135,7 +135,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     {
         CHAN chan = parseCHAN(chunkBuf);
         channels = chan.channels;
-        spdlog::debug("[lib] Processed CHAN packet, added {} channels", chan.channels.size());
+        spdlog::debug("[libvconsole] Processed CHAN packet, added {} channels", chan.channels.size());
     }
     else if (msgType == "PRNT")
     {
@@ -173,7 +173,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "CFGV")
     {
         CFGV cfgv = parseCFGV(chunkBuf);
-        spdlog::debug("[lib] Processed CFGV packet: {} = {}", cfgv.variable, cfgv.value);
+        spdlog::debug("[libvconsole] Processed CFGV packet: {} = {}", cfgv.variable, cfgv.value);
     }
     else
     {
