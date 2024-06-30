@@ -64,7 +64,6 @@ jobs:
 
       - name: Copy libvconsole files
         run: |
-          mkdir -p CS2RemoteConsole-client/lib
           mkdir -p CS2RemoteConsole-client/include/libvconsole
           copy libvconsole\libvconsole.lib CS2RemoteConsole-client\lib\
           copy libvconsole\src\*.h CS2RemoteConsole-client\include\libvconsole
