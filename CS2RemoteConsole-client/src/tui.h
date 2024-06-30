@@ -13,16 +13,23 @@
 #include <mutex>
 #include <atomic>
 #include <chrono>
+#include <unordered_map>
 
-struct ConsoleMessage
+struct ConsoleChannel
 {
-    std::string channel_name;
-    std::string message;
+    int id;
+    std::string name;
     uint32_t color;
 };
 
+struct ConsoleMessage
+{
+    int channelId;
+    std::string message;
+};
 
-class TUI {
+class TUI
+{
 public:
     TUI();
     ~TUI();
@@ -33,7 +40,8 @@ public:
 
     void setCommandCallback(std::function<void(const std::string&)> callback);
     void addLogMessage(const std::string& message);
-    void addConsoleMessage(std::string channelName, std::string message, uint32_t color = 0);
+    void addConsoleMessage(int channelId, const std::string& message);
+    void registerChannel(int id, const std::string& name, uint32_t color);
 
     WINDOW* m_consoleWindow;
 
@@ -42,15 +50,16 @@ private:
     static const size_t MAX_CONSOLE_MESSAGES = 1000;
 
     WINDOW* m_logWindow;
-
     WINDOW* m_inputWindow;
     std::vector<std::string> m_logMessages;
     std::vector<ConsoleMessage> m_consoleMessages;
+    std::unordered_map<int, ConsoleChannel> m_channels;
 
     std::string m_inputBuffer;
     std::function<void(const std::string&)> m_commandCallback;
     std::mutex m_logMutex;
     std::mutex m_consoleMutex;
+    std::mutex m_channelsMutex;
     std::atomic<bool> m_running;
     std::atomic<bool> m_needsResize;
     int m_lastWidth;

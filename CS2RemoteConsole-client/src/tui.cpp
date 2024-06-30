@@ -72,19 +72,24 @@ void TUI::addLogMessage(const std::string& message)
     }
 }
 
-void TUI::addConsoleMessage(std::string channelName, std::string message, uint32_t color)
+void TUI::addConsoleMessage(int channelId, const std::string& message)
 {
     std::lock_guard<std::mutex> lock(m_consoleMutex);
     ConsoleMessage cMessage;
-    cMessage.channel_name = channelName;
+    cMessage.channelId = channelId;
     cMessage.message = message;
-    cMessage.color = color;
 
     m_consoleMessages.push_back(cMessage);
     if (m_consoleMessages.size() > MAX_CONSOLE_MESSAGES)
     {
         m_consoleMessages.erase(m_consoleMessages.begin());
     }
+}
+
+void TUI::registerChannel(int id, const std::string& name, uint32_t color)
+{
+    std::lock_guard<std::mutex> lock(m_channelsMutex);
+    m_channels[id] = {id, name, color};
 }
 
 void TUI::createWindows()
@@ -165,6 +170,7 @@ void TUI::drawLogWindow()
 void TUI::drawConsoleWindow()
 {
     std::lock_guard<std::mutex> lock(m_consoleMutex);
+    std::lock_guard<std::mutex> channelsLock(m_channelsMutex);
     werase(m_consoleWindow);
     box(m_consoleWindow, 0, 0);
     mvwprintw(m_consoleWindow, 0, 2, " Console ");
@@ -173,23 +179,24 @@ void TUI::drawConsoleWindow()
     int startIndex = std::max(0, static_cast<int>(m_consoleMessages.size()) - maxLines);
     for (int i = 0; i < maxLines && (startIndex + i) < static_cast<int>(m_consoleMessages.size()); ++i)
     {
-        auto currentMessage = m_consoleMessages[startIndex + i];
-        int color = currentMessage.color + 256;  // Using 0 for dither
+        auto& currentMessage = m_consoleMessages[startIndex + i];
+        auto channelIt = m_channels.find(currentMessage.channelId);
 
-        // Create a new color pair
-        int pair = color + 3;  // Avoid using 0
+        if (channelIt != m_channels.end())
+        {
+            const auto& channel = channelIt->second;
+            int color = channel.color;
+            int pair = color + 3; // Avoid using 0, 1, 2 which are reserved
 
-        pair = 0x00FFFF00 + 256 + 1;
-
-        init_pair(1, COLOR_RED, COLOR_BLACK);
-
-        init_pair(pair, color, COLOR_BLACK);
-
-        //wattrset(m_consoleWindow, COLOR_PAIR(pair)); //set color
-        attrset(COLOR_PAIR(3));
-        wprintw(m_consoleWindow, "%s", m_consoleMessages[startIndex + i].message.c_str());
-        //attroff(COLOR_PAIR(1)); //set color
-        //wattroff(m_consoleWindow, COLOR_PAIR(pair));//unset color
+            init_pair(pair, color, COLOR_BLACK);
+            wattron(m_consoleWindow, COLOR_PAIR(pair));
+            mvwprintw(m_consoleWindow, i + 1, 1, "[%s] %s", channel.name.c_str(), currentMessage.message.c_str());
+            wattroff(m_consoleWindow, COLOR_PAIR(pair));
+        }
+        else
+        {
+            mvwprintw(m_consoleWindow, i + 1, 1, "[Unknown] %s", currentMessage.message.c_str());
+        }
     }
 
     wnoutrefresh(m_consoleWindow);
@@ -217,7 +224,7 @@ void TUI::handleInput()
         {
             m_commandCallback(m_inputBuffer);
             std::string channelName = std::string("> ");
-            addConsoleMessage(channelName, m_inputBuffer);
+            addConsoleMessage(-1, m_inputBuffer);
             m_inputBuffer.clear();
         }
         break;

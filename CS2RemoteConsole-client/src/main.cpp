@@ -103,25 +103,21 @@ int main()
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 
         auto& vconsole = VConsoleSingleton::getInstance();
-        vconsole.setOnPRNTReceived([](const std::string& source, const PRNT& PRNT)
+        vconsole.setOnCHANReceived([](const CHAN& CHAN)
         {
-            auto& vconsole = VConsoleSingleton::getInstance(); // FIXME: evil lambda instance bs
-            auto channels = vconsole.getChannels();
-            auto it = std::find_if(channels->begin(), channels->end(), [&](const Channel& ch) { return ch.id == PRNT.channelID; });
-            if (it != channels->end())
+            for (const auto& channel : CHAN.channels)
             {
-                tui.addConsoleMessage(it->name, PRNT.message, it->text_RGBA_override);
-            }
-            else
-            {
-                tui.addConsoleMessage("unknown", PRNT.message);
+                tui.registerChannel(channel.id, channel.name, channel.text_RGBA_override);
             }
         });
 
-        // Main application loop
+        vconsole.setOnPRNTReceived([](const PRNT& PRNT)
+        {
+            tui.addConsoleMessage(PRNT.channelID, PRNT.message);
+        });
+
         while (applicationRunning)
         {
-            // Process any background tasks
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
