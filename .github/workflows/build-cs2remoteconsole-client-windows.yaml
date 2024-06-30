@@ -93,8 +93,21 @@ jobs:
           cd CS2RemoteConsole-client
           msbuild CS2RemoteConsole-client.vcxproj /p:Configuration=Release /p:Platform=x64
 
+      - name: Prepare artifact directory
+        run: |
+          mkdir artifact
+          copy "CS2RemoteConsole-client\x64\Release\CS2RemoteConsole-client.exe" "artifact\"
+          copy "CS2RemoteConsole-client\config.ini" "artifact\"
+        shell: cmd
+
+      - name: Verify artifact contents
+        run: |
+          echo "Verifying artifact contents:"
+          dir artifact
+        shell: cmd
+
       - name: Upload CS2RemoteConsole-client artifact
         uses: actions/upload-artifact@v2
         with:
           name: CS2RemoteConsole-client-build
-          path: CS2RemoteConsole-client/x64/Release/CS2RemoteConsole-client.exe
+          path: artifact
