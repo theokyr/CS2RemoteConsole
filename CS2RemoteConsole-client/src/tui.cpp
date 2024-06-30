@@ -28,17 +28,7 @@ void TUI::init()
     use_default_colors();
     nodelay(stdscr, TRUE);
 
-    // Check for extended color support
-    if (can_change_color() && COLORS > 0x1000000 && COLOR_PAIRS > 0x1000000)
-    {
-        m_maxColorPairs = COLOR_PAIRS - 1; // Reserve pair 0
-        m_useExtendedColors = true;
-    }
-    else
-    {
-        m_maxColorPairs = 255; // Standard 256 color mode, reserve pair 0
-        m_useExtendedColors = false;
-    }
+    m_useExtendedColors = can_change_color() && COLORS > EXTENDED_COLOR_BASE;
 
     createWindows();
     getmaxyx(stdscr, m_lastHeight, m_lastWidth);
@@ -103,35 +93,18 @@ void TUI::registerChannel(int channelId, const std::string& name, uint32_t color
 
     ConsoleChannel channel;
     channel.name = name;
-    channel.color = color;
+    channel.color = ((color & 0xFF) << 24) | ((color & 0xFF00) << 8) |
+        ((color & 0xFF0000) >> 8) | ((color & 0xFF000000) >> 24);
 
     if (color != 0)
     {
         auto it = m_colorCache.find(color);
         if (it == m_colorCache.end())
         {
-            if (m_nextColorPairId < m_maxColorPairs)
+            if (m_nextColorPairId < COLOR_PAIRS)
             {
                 short colorPairId = m_nextColorPairId++;
-
-                if (m_useExtendedColors)
-                {
-                    int r = (color >> 16) & 0xFF;
-                    int g = (color >> 8) & 0xFF;
-                    int b = color & 0xFF;
-                    init_extended_color(colorPairId, r, g, b);
-                    init_extended_pair(colorPairId, colorPairId, -1);
-                }
-                else
-                {
-                    // Map to the nearest color in 256 color mode
-                    int r = (color >> 16) & 0xFF;
-                    int g = (color >> 8) & 0xFF;
-                    int b = color & 0xFF;
-                    short nearestColor = 16 + (r / 43 * 36) + (g / 43 * 6) + (b / 43);
-                    init_pair(colorPairId, nearestColor, -1);
-                }
-
+                initializeColor(color, colorPairId);
                 m_colorCache[color] = colorPairId;
                 channel.colorPairId = colorPairId;
             }
@@ -139,6 +112,7 @@ void TUI::registerChannel(int channelId, const std::string& name, uint32_t color
             {
                 // We've run out of color pairs, use a default
                 channel.colorPairId = 0;
+                spdlog::warn("Ran out of color pairs. Using default color for channel: {}", name);
             }
         }
         else
@@ -152,6 +126,46 @@ void TUI::registerChannel(int channelId, const std::string& name, uint32_t color
     }
 
     m_channels[channelId] = channel;
+}
+
+void TUI::initializeColor(uint32_t color, short& colorPairId)
+{
+    int r = (color >> 24) & 0xFF;
+    int g = (color >> 16) & 0xFF;
+    int b = (color >> 8) & 0xFF;
+
+    if (m_useExtendedColors)
+    {
+        int colorNumber = EXTENDED_COLOR_BASE + colorPairId;
+        init_color(colorNumber, r * 1000 / 255, g * 1000 / 255, b * 1000 / 255);
+        init_pair(colorPairId, colorNumber, -1);
+    }
+    else
+    {
+        short nearestColor = mapTo256Color(color);
+        init_pair(colorPairId, nearestColor, -1);
+    }
+}
+
+short TUI::mapTo256Color(uint32_t color)
+{
+    int r = (color >> 16) & 0xFF;
+    int g = (color >> 8) & 0xFF;
+    int b = color & 0xFF;
+
+    // 16 system colors
+    if (r == g && g == b)
+    {
+        if (r < 8) return 16;
+        if (r > 248) return 231;
+        return static_cast<short>(round(((r - 8) / 247.0) * 24) + 232);
+    }
+
+    // 216 color cube
+    return static_cast<short>(16 +
+        36 * round(r / 255.0 * 5) +
+        6 * round(g / 255.0 * 5) +
+        round(b / 255.0 * 5));
 }
 
 void TUI::createWindows()
@@ -251,9 +265,9 @@ void TUI::drawConsoleWindow()
 
             if (channel.colorPairId != 0)
             {
-                wcolor_set(m_consoleWindow, channel.colorPairId, NULL);
+                wattron(m_consoleWindow, COLOR_PAIR(channel.colorPairId));
                 mvwprintw(m_consoleWindow, i + 1, 1, "[%s] %s", channel.name.c_str(), currentMessage.message.c_str());
-                wcolor_set(m_consoleWindow, 0, NULL);
+                wattroff(m_consoleWindow, COLOR_PAIR(channel.colorPairId));
             }
             else
             {

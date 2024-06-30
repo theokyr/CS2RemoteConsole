@@ -16,10 +16,11 @@
 #include <unordered_map>
 #include <spdlog/spdlog.h>
 
-struct ConsoleChannel {
+struct ConsoleChannel
+{
     std::string name;
     uint32_t color;
-    short colorPairId; 
+    short colorPairId;
 };
 
 struct ConsoleMessage
@@ -47,10 +48,9 @@ public:
 
 private:
     std::unordered_map<uint32_t, short> m_colorCache;
-    short m_nextColorPairId = 1;  // Start from 1, 0 is reserved
-    short m_maxColorPairs;
+    short m_nextColorPairId = 1; // Start from 1, 0 is reserved
     bool m_useExtendedColors;
-    
+
     static const size_t MAX_LOG_MESSAGES = 1000;
     static const size_t MAX_CONSOLE_MESSAGES = 1000;
 
@@ -82,6 +82,10 @@ private:
     void handleInput();
     void handleResize();
     void resizeWindows(int height, int width);
+
+    static const int EXTENDED_COLOR_BASE = 256;
+    short mapTo256Color(uint32_t color);
+    void initializeColor(uint32_t color, short& colorPairId);
 };
 
 #endif // TUI_H
