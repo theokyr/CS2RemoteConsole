@@ -20,7 +20,7 @@ bool connectToRemoteServer()
     remoteServerSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remoteServerSock == INVALID_SOCKET)
     {
-        spdlog::error("[Connection] [RemoteServer] Failed to create socket for remote server: {}", WSAGetLastError());
+        spdlog::error("[RemoteServerConnection] Failed to create socket for remote server: {}", WSAGetLastError());
         return false;
     }
 
@@ -31,13 +31,13 @@ bool connectToRemoteServer()
 
     if (connect(remoteServerSock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
     {
-        spdlog::error("[Connection] [RemoteServer] Connection to remote server failed: {}", WSAGetLastError());
+        spdlog::error("[RemoteServerConnection] Connection to remote server failed: {}", WSAGetLastError());
         closesocket(remoteServerSock);
         remoteServerSock = INVALID_SOCKET;
         return false;
     }
 
-    spdlog::info("[Connection] [RemoteServer] Connected to remote server at {}:{}", ip, port);
+    spdlog::info("[RemoteServerConnection] Connected to remote server at {}:{}", ip, port);
     return true;
 }
 
@@ -61,7 +61,7 @@ void remoteServerConnectorLoop()
             }
             else
             {
-                spdlog::error("[Connection] [RemoteServer] Failed to connect to remote server. Retrying in {} seconds...", reconnect_delay / 1000);
+                spdlog::error("[RemoteServerConnection] Failed to connect to remote server. Retrying in {} seconds...", reconnect_delay / 1000);
                 std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
             }
         }
@@ -85,23 +85,23 @@ void listenForRemoteServerData()
         if (bytesReceived > 0)
         {
             buffer[bytesReceived] = '\0';
-            spdlog::info("[Connection] [RemoteServer] Received '{}' from remote server", buffer);
+            spdlog::info("[RemoteServerConnection] Received '{}' from remote server", buffer);
             sendPayloadToCS2Console(buffer);
         }
         else if (bytesReceived == 0)
         {
-            spdlog::warn("[Connection] [RemoteServer] Connection closed by remote server");
+            spdlog::warn("[RemoteServerConnection] Connection closed by remote server");
             break;
         }
         else if (WSAGetLastError() != WSAEWOULDBLOCK)
         {
-            spdlog::error("[Connection] [RemoteServer] recv failed from remote server: Error code {} ", WSAGetLastError());
+            spdlog::error("[RemoteServerConnection] recv failed from remote server: Error code {} ", WSAGetLastError());
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    spdlog::info("[Connection] [RemoteServer] Remote server listener thread stopping...");
+    spdlog::info("[RemoteServerConnection] Remote server listener thread stopping...");
     remoteServerConnected = false;
     listeningRemoteServer = false;
     closesocket(remoteServerSock);

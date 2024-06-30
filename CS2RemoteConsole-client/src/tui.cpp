@@ -120,7 +120,7 @@ void TUI::registerChannel(int id, const std::string& name, uint32_t color)
             else
             {
                 channel.colorPairId = 0;
-                spdlog::warn("Ran out of color pairs. Using default color for channel: {}", name);
+                spdlog::warn("[TUI] Ran out of color pairs. Using default color for channel: {}", name);
             }
         }
         else

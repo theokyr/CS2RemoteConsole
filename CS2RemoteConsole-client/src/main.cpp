@@ -83,7 +83,7 @@ int main()
             tui.addConsoleMessage(PRNT.channelID, PRNT.message);
         });
 
-        spdlog::info("Starting {}", application_name);
+        spdlog::info("[Main] Starting {}", application_name);
 
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
@@ -94,7 +94,7 @@ int main()
     }
     catch (const std::exception& e)
     {
-        spdlog::error("Unhandled exception: {}", e.what());
+        spdlog::error("[Main] Unhandled exception: {}", e.what());
         cleanupCS2Console();
         cleanupRemoteServer();
         WSACleanup();
@@ -102,7 +102,7 @@ int main()
     }
     catch (...)
     {
-        spdlog::error("Unhandled unknown exception.");
+        spdlog::error("[Main] Unhandled unknown exception.");
         cleanupCS2Console();
         cleanupRemoteServer();
         WSACleanup();
