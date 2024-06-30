@@ -10,10 +10,9 @@
 #include "constants.h"
 #include "utils.h"
 #include "singletons.h"
-#include "connection_cs2console.h"
-#include "connection_remoteserver.h"
-#include "logging.h"
-#include "tui.h"
+#include "connection/connection_cs2console.h"
+#include "connection/connection_remoteserver.h"
+#include "tui/tui.h"
 #include <windows.h>
 
 std::atomic<bool> applicationRunning(true);
@@ -50,8 +49,8 @@ int main()
         std::stringstream ss;
         ss << application_name << ".log";
         applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str()));
-        auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
-        set_default_logger(applicationLogger);
+        auto applicationLogger = std::make_shared<spdlog::logger>("CS2RemoteConsole-Client", begin(applicationSinks), end(applicationSinks));
+        spdlog::set_default_logger(applicationLogger);
 
         if (!setupConfig() || !setupApplicationWinsock())
         {

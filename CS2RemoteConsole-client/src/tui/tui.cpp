@@ -5,8 +5,6 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/callback_sink.h>
 
-#include "logging.h"
-
 template <typename T>
 T clamp(const T& value, const T& low, const T& high)
 {

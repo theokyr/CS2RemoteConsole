@@ -1,7 +1,6 @@
 ﻿#include "connection_cs2console.h"
-#include "logging.h"
 #include "spdlog/spdlog.h"
-#include "config.h"
+#include "../config.h"
 #include <chrono>
 #include <thread>
 

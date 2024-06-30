@@ -4,8 +4,6 @@
 #include <chrono>
 #include <spdlog/spdlog.h>
 
-#include "logging.h"
-
 SOCKET remoteServerSock = INVALID_SOCKET;
 std::atomic<bool> listeningRemoteServer(false);
 std::atomic<bool> remoteServerConnected(false);

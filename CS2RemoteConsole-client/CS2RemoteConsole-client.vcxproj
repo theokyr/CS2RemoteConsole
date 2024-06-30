@@ -95,20 +95,20 @@
     </ItemDefinitionGroup>
     <ItemGroup>
         <ClCompile Include="src\config.cpp"/>
-        <ClCompile Include="src\connection_cs2console.cpp"/>
-        <ClCompile Include="src\connection_remoteserver.cpp"/>
+        <ClCompile Include="src\connection\connection_cs2console.cpp"/>
+        <ClCompile Include="src\connection\connection_remoteserver.cpp"/>
         <ClCompile Include="src\main.cpp"/>
-        <ClCompile Include="src\tui.cpp"/>
+        <ClCompile Include="src\tui\tui.cpp"/>
         <ClCompile Include="src\utils.cpp"/>
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="src\config.h"/>
-        <ClInclude Include="src\connection_cs2console.h"/>
-        <ClInclude Include="src\connection_remoteserver.h"/>
-        <ClInclude Include="src\logging.h"/>
+        <ClInclude Include="src\connection\connection_cs2console.h"/>
+        <ClInclude Include="src\connection\connection_remoteserver.h"/>
         <ClInclude Include="src\constants.h" />
+        <ClInclude Include="src\logging.h"/>
         <ClInclude Include="src\singletons.h" />
-        <ClInclude Include="src\tui.h"/>
+        <ClInclude Include="src\tui\tui.h"/>
         <ClInclude Include="src\utils.h"/>
     </ItemGroup>
     <ItemGroup>

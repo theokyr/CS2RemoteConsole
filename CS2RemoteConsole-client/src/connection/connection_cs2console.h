@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 #include "vconsole.h"
-#include "singletons.h"
+#include "../singletons.h"
 
 #pragma comment(lib, "libvconsole.lib")
 

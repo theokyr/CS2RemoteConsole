@@ -6,7 +6,7 @@
 #include <atomic>
 #include <thread>
 #include "connection_cs2console.h"
-#include "config.h"
+#include "../config.h"
 
 #pragma once
 
