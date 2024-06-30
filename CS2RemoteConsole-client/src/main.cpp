@@ -4,7 +4,6 @@
 #include <csignal>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "config.h"
 #include "payloads.h"
@@ -57,21 +56,18 @@ void setupLogging()
     auto tui_sink = std::make_shared<tui_sink_mt>(tui);
 
     std::vector<spdlog::sink_ptr> applicationSinks;
-    // applicationSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
     applicationSinks.push_back(tui_sink);
     auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
     register_logger(applicationLogger);
 
     std::vector<spdlog::sink_ptr> protocolSinks;
-    // protocolSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     protocolSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/protocol.log"));
     protocolSinks.push_back(tui_sink);
     auto protocolLogger = std::make_shared<spdlog::logger>(LOGGER_VCON, begin(protocolSinks), end(protocolSinks));
     register_logger(protocolLogger);
 
     std::vector<spdlog::sink_ptr> remoteServerSinks;
-    // remoteServerSinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
     remoteServerSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/remote.log"));
     remoteServerSinks.push_back(tui_sink);
     auto remoteServerLogger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, begin(remoteServerSinks), end(remoteServerSinks));
@@ -82,11 +78,12 @@ int main()
 {
     try
     {
+        setupLogging();
         std::thread uiThread(tuiThread);
 
         Sleep(1000);
 
-        setupLogging();
+        
         signal(SIGINT, signalHandler);
 
         if (!setupConfig() || !setupApplicationWinsock())

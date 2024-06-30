@@ -2,6 +2,9 @@
 #include <algorithm>
 #include <chrono>
 #include <thread>
+#include <spdlog/spdlog.h>
+
+#include "logging.h"
 
 TUI::TUI()
     : m_logWindow(nullptr), m_consoleWindow(nullptr), m_inputWindow(nullptr),
@@ -23,11 +26,19 @@ void TUI::init()
     curs_set(1);
     start_color();
     use_default_colors();
-    nodelay(stdscr, TRUE); // Set getch() to non-blocking
+    nodelay(stdscr, TRUE);
 
-    init_pair(1, COLOR_WHITE, -1);
-    init_pair(2, COLOR_GREEN, -1);
-    init_pair(3, COLOR_YELLOW, -1);
+    // Check for extended color support
+    if (can_change_color() && COLORS > 0x1000000 && COLOR_PAIRS > 0x1000000)
+    {
+        m_maxColorPairs = COLOR_PAIRS - 1; // Reserve pair 0
+        m_useExtendedColors = true;
+    }
+    else
+    {
+        m_maxColorPairs = 255; // Standard 256 color mode, reserve pair 0
+        m_useExtendedColors = false;
+    }
 
     createWindows();
     getmaxyx(stdscr, m_lastHeight, m_lastWidth);
@@ -86,10 +97,61 @@ void TUI::addConsoleMessage(int channelId, const std::string& message)
     }
 }
 
-void TUI::registerChannel(int id, const std::string& name, uint32_t color)
+void TUI::registerChannel(int channelId, const std::string& name, uint32_t color)
 {
     std::lock_guard<std::mutex> lock(m_channelsMutex);
-    m_channels[id] = {id, name, color};
+
+    ConsoleChannel channel;
+    channel.name = name;
+    channel.color = color;
+
+    if (color != 0)
+    {
+        auto it = m_colorCache.find(color);
+        if (it == m_colorCache.end())
+        {
+            if (m_nextColorPairId < m_maxColorPairs)
+            {
+                short colorPairId = m_nextColorPairId++;
+
+                if (m_useExtendedColors)
+                {
+                    int r = (color >> 16) & 0xFF;
+                    int g = (color >> 8) & 0xFF;
+                    int b = color & 0xFF;
+                    init_extended_color(colorPairId, r, g, b);
+                    init_extended_pair(colorPairId, colorPairId, -1);
+                }
+                else
+                {
+                    // Map to the nearest color in 256 color mode
+                    int r = (color >> 16) & 0xFF;
+                    int g = (color >> 8) & 0xFF;
+                    int b = color & 0xFF;
+                    short nearestColor = 16 + (r / 43 * 36) + (g / 43 * 6) + (b / 43);
+                    init_pair(colorPairId, nearestColor, -1);
+                }
+
+                m_colorCache[color] = colorPairId;
+                channel.colorPairId = colorPairId;
+            }
+            else
+            {
+                // We've run out of color pairs, use a default
+                channel.colorPairId = 0;
+            }
+        }
+        else
+        {
+            channel.colorPairId = it->second;
+        }
+    }
+    else
+    {
+        channel.colorPairId = 0;
+    }
+
+    m_channels[channelId] = channel;
 }
 
 void TUI::createWindows()
@@ -177,6 +239,7 @@ void TUI::drawConsoleWindow()
 
     int maxLines = getmaxy(m_consoleWindow) - 2;
     int startIndex = std::max(0, static_cast<int>(m_consoleMessages.size()) - maxLines);
+
     for (int i = 0; i < maxLines && (startIndex + i) < static_cast<int>(m_consoleMessages.size()); ++i)
     {
         auto& currentMessage = m_consoleMessages[startIndex + i];
@@ -185,13 +248,17 @@ void TUI::drawConsoleWindow()
         if (channelIt != m_channels.end())
         {
             const auto& channel = channelIt->second;
-            int color = channel.color;
-            int pair = color + 3; // Avoid using 0, 1, 2 which are reserved
 
-            init_pair(pair, color, COLOR_BLACK);
-            wattron(m_consoleWindow, COLOR_PAIR(pair));
-            mvwprintw(m_consoleWindow, i + 1, 1, "[%s] %s", channel.name.c_str(), currentMessage.message.c_str());
-            wattroff(m_consoleWindow, COLOR_PAIR(pair));
+            if (channel.colorPairId != 0)
+            {
+                wcolor_set(m_consoleWindow, channel.colorPairId, NULL);
+                mvwprintw(m_consoleWindow, i + 1, 1, "[%s] %s", channel.name.c_str(), currentMessage.message.c_str());
+                wcolor_set(m_consoleWindow, 0, NULL);
+            }
+            else
+            {
+                mvwprintw(m_consoleWindow, i + 1, 1, "[%s] %s", channel.name.c_str(), currentMessage.message.c_str());
+            }
         }
         else
         {

@@ -14,12 +14,12 @@
 #include <atomic>
 #include <chrono>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 
-struct ConsoleChannel
-{
-    int id;
+struct ConsoleChannel {
     std::string name;
     uint32_t color;
+    short colorPairId; 
 };
 
 struct ConsoleMessage
@@ -46,6 +46,11 @@ public:
     WINDOW* m_consoleWindow;
 
 private:
+    std::unordered_map<uint32_t, short> m_colorCache;
+    short m_nextColorPairId = 1;  // Start from 1, 0 is reserved
+    short m_maxColorPairs;
+    bool m_useExtendedColors;
+    
     static const size_t MAX_LOG_MESSAGES = 1000;
     static const size_t MAX_CONSOLE_MESSAGES = 1000;
 
@@ -64,6 +69,8 @@ private:
     std::atomic<bool> m_needsResize;
     int m_lastWidth;
     int m_lastHeight;
+
+    std::shared_ptr<spdlog::logger> logger;
 
     void checkResize();
     void createWindows();
