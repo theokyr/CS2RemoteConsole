@@ -155,11 +155,6 @@ void cleanupCS2Console()
 void initializeCS2Connection()
 {
     auto& vconsole = VConsoleSingleton::getInstance();
-    vconsole.setOnPRNTReceived([](const std::string& channelName, const std::string& message)
-    {
-        auto logger = spdlog::get(LOGGER_VCON);
-        logger->info("YOOOOOOOOO ");
-    });
 
     vconsole.setOnCVARsLoaded([](const std::vector<Cvar>& cvars)
     {

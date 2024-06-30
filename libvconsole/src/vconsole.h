@@ -46,23 +46,24 @@ public:
     void sendCmd(const std::string& cmd);
     int readChunk(std::vector<char>& outputBuf);
 
-    void setOnPRNTReceived(std::function<void(const std::string&, const std::string&)> callback);
+    void setOnPRNTReceived(std::function<void(const std::string&, const PRNT&)> callback);
     void setOnCVARsLoaded(std::function<void(const std::vector<Cvar>&)> callback);
     void setOnADONReceived(std::function<void(const std::string&)> callback);
     void setOnDisconnected(std::function<void()> callback);
 
     void processIncomingData();
     SOCKET getSocket() const { return clientSocket; }
+    std::vector<Channel> channels;
 
 private:
     SOCKET clientSocket;
 
-    std::function<void(const std::string&, const std::string&)> onPRNTReceived;
+    std::function<void(const std::string&, const PRNT&)> onPRNTReceived;
     std::function<void(const std::vector<Cvar>&)> onCVARsLoaded;
     std::function<void(const std::string&)> onADONReceived;
     std::function<void()> onDisconnected;
 
-    std::vector<Channel> channels;
+
     std::vector<Cvar> cvars;
     std::string adonName;
 

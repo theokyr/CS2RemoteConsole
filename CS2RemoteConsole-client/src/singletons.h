@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../libvconsole/vconsole.h"
+#include "vconsole.h"
 #include <memory>
 #include <mutex>
 

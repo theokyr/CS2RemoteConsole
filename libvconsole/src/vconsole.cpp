@@ -139,7 +139,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
 
             if (onPRNTReceived)
             {
-                onPRNTReceived(it->name, prnt.message);
+                onPRNTReceived(it->name, prnt);
             }
         }
         else
@@ -147,7 +147,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
 
             if (onPRNTReceived)
             {
-                onPRNTReceived("unknown", prnt.message);
+                onPRNTReceived("unknown", prnt);
             }
         }
     }
@@ -169,7 +169,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     }
 }
 
-void VConsole::setOnPRNTReceived(std::function<void(const std::string&, const std::string&)> callback)
+void VConsole::setOnPRNTReceived(std::function<void(const std::string&, const PRNT&)> callback)
 {
     onPRNTReceived = callback;
 }
@@ -239,10 +239,15 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
 {
     CHAN chan;
     const char* data = chunkBuf.data() + sizeof(VConChunk);
-    chan.numChannels = ntohs(*reinterpret_cast<const uint16_t*>(data));
+
+    size_t remainingSize = chunkBuf.size() - sizeof(VConChunk) - sizeof(uint16_t);
+    chan.numChannels = remainingSize / sizeof(Channel);
+
+
     data += sizeof(uint16_t);
 
-    chan.channels.reserve(chan.numChannels); // Reserve space for efficiency
+
+    chan.channels.reserve(chan.numChannels);
     for (int i = 0; i < chan.numChannels; ++i)
     {
         Channel channel;
@@ -261,11 +266,8 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
         channel.verbosity_current = ntohl(*reinterpret_cast<const int32_t*>(data));
         data += sizeof(int32_t);
 
-        uint8_t R = *reinterpret_cast<const uint8_t*>(data++);
-        uint8_t G = *reinterpret_cast<const uint8_t*>(data++);
-        uint8_t B = *reinterpret_cast<const uint8_t*>(data++);
-        uint8_t A = *reinterpret_cast<const uint8_t*>(data++);
-        channel.text_RGBA_override = (R << 24) | (G << 16) | (B << 8) | A;
+        channel.text_RGBA_override = ntohl(*reinterpret_cast<const uint32_t*>(data));
+        data += sizeof(uint32_t);
 
         memcpy(channel.name, data, sizeof(channel.name));
         channel.name[sizeof(channel.name) - 1] = '\0'; // Ensure null termination
