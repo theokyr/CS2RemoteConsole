@@ -2,6 +2,8 @@
 
 CS2RemoteConsole is a C++ utility for remotely interacting with Counter-Strike 2's console, featuring a TUI and support for a centralized remote server.
 
+![Image of the CS2RemoteConsole Server and Client applications running together](https://github.com/theokyr/CS2RemoteConsole/blob/master/docs/image.jpg?raw=true)
+
 ## Features
 
 - Connect, read, and write messages to CS2 through the VConsole socket
