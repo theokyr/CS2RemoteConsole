@@ -43,7 +43,7 @@ public:
 
     bool connect(const std::string& ip = "127.0.0.1", int port = 29000);
     void disconnect();
-    void sendCmd(const std::string& cmd);
+    bool sendCmd(const std::string& cmd);
     int readChunk(std::vector<char>& outputBuf);
 
     std::vector<Channel>* getChannels()
@@ -57,8 +57,22 @@ public:
     void setOnDisconnected(std::function<void()> callback);
     void setOnCHANReceived(std::function<void(const CHAN&)> callback);
 
-    void processIncomingData();
+    bool processIncomingData();
     SOCKET getSocket() const { return clientSocket; }
+
+    bool isConnected() const
+    {
+        if (clientSocket == INVALID_SOCKET)
+            return false;
+
+        // Perform a non-blocking check on the socket
+        char buf;
+        int result = recv(clientSocket, &buf, 1, MSG_PEEK);
+        if (result == 0 || (result == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK))
+            return false;
+
+        return true;
+    }
 
 private:
     SOCKET clientSocket;

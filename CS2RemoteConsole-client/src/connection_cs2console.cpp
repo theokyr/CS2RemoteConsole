@@ -51,6 +51,10 @@ void cs2ConsoleConnectorLoop()
             {
                 cs2ConsoleConnected = true;
                 listeningCS2 = true;
+                if (cs2ListenerThread.joinable())
+                {
+                    cs2ListenerThread.join();
+                }
                 cs2ListenerThread = std::thread(listenForCS2ConsoleData);
             }
             else
@@ -66,10 +70,26 @@ void cs2ConsoleConnectorLoop()
             auto now = std::chrono::steady_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_sanity_check).count() >= sanity_check_interval)
             {
-                vconsole.sendCmd("say insanity!");
-                spdlog::debug("[CS2ConsoleConnection] Sent sanity check command to CS2 console");
+                if (!vconsole.sendCmd("echo CS2RemoteConsole_SanityCheck"))
+                {
+                    spdlog::warn("[CS2ConsoleConnection] Failed to send sanity check command. Connection may be unstable.");
+                }
+                else
+                {
+                    spdlog::debug("[CS2ConsoleConnection] Sent sanity check command to CS2 console");
+                }
                 last_sanity_check = now;
             }
+        }
+
+        // Check if the connection is still alive
+        if (!vconsole.isConnected())
+        {
+            spdlog::error("[CS2ConsoleConnection] Connection to CS2 console lost. Attempting to reconnect...");
+            cs2ConsoleConnected = false;
+            listeningCS2 = false;
+            vconsole.disconnect();
+            continue;
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -80,31 +100,26 @@ void listenForCS2ConsoleData()
 {
     auto& vconsole = VConsoleSingleton::getInstance();
 
-    try
+    while (listeningCS2 && running)
     {
-        while (listeningCS2 && running)
+        try
         {
-            try
+            if (!vconsole.processIncomingData())
             {
-                vconsole.processIncomingData();
+                if (!vconsole.isConnected())
+                {
+                    spdlog::error("[CS2ConsoleConnection] Connection lost while processing data.");
+                    break;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
-            catch (const std::exception& e)
-            {
-                spdlog::error("[CS2ConsoleConnection] Exception in VConsole::processIncomingData: {}", e.what());
-                break;
-            }
-
-            // Small sleep to prevent tight loop
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-    }
-    catch (const std::exception& e)
-    {
-        spdlog::error("[CS2ConsoleConnection] Exception in listenForCS2ConsoleData: {}", e.what());
-    }
-    catch (...)
-    {
-        spdlog::error("[CS2ConsoleConnection] Unknown exception in listenForCS2ConsoleData");
+        catch (const std::exception& e)
+        {
+            spdlog::error("[CS2ConsoleConnection] Exception in processIncomingData: {}", e.what());
+            break;
+        }
     }
 
     spdlog::info("[CS2ConsoleConnection] CS2 console listener thread stopping...");
@@ -122,8 +137,7 @@ int sendPayloadToCS2Console(const std::string& payload)
         return 1;
     }
 
-    vconsole.sendCmd(payload);
-    return 0;
+    return vconsole.sendCmd(payload);
 }
 
 void cleanupCS2Console()
@@ -164,9 +178,17 @@ void initializeCS2Connection()
 
     vconsole.setOnDisconnected([]()
     {
-        spdlog::error("[CS2ConsoleConnection] Disconnected from CS2 console");
+        spdlog::warn("[CS2ConsoleConnection] Disconnected from CS2 console");
         cs2ConsoleConnected = false;
         listeningCS2 = false;
+    });
+
+    vconsole.setOnPRNTReceived([](const PRNT& prnt)
+    {
+        if (prnt.message.find("CS2RemoteConsole_SanityCheck") != std::string::npos)
+        {
+            spdlog::debug("[CS2ConsoleConnection] Received sanity check response");
+        }
     });
 
     cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);

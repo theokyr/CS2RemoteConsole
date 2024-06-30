@@ -48,10 +48,11 @@ void VConsole::disconnect()
     }
 }
 
-void VConsole::sendCmd(const std::string& cmd)
+bool VConsole::sendCmd(const std::string& cmd)
 {
     std::vector<unsigned char> payload = createCommandPayload(cmd);
-    send(clientSocket, reinterpret_cast<const char*>(payload.data()), static_cast<int>(payload.size()), 0);
+    int result = send(clientSocket, reinterpret_cast<const char*>(payload.data()), static_cast<int>(payload.size()), 0);
+    return result != SOCKET_ERROR;
 }
 
 int VConsole::readChunk(std::vector<char>& outputBuf)
@@ -87,26 +88,19 @@ int VConsole::readChunk(std::vector<char>& outputBuf)
     return 1;
 }
 
-void VConsole::processIncomingData()
+bool VConsole::processIncomingData()
 {
     std::vector<char> chunkBuf;
-    while (true)
+    int result = readChunk(chunkBuf);
+    if (result <= 0)
     {
-        int result = readChunk(chunkBuf);
-        if (result <= 0)
-        {
-            if (result < 0)
-            {
-            }
-            break;
-        }
-
-        VConChunk* header = reinterpret_cast<VConChunk*>(chunkBuf.data());
-        std::string msgType(header->type, 4);
-        // spdlog::debug("[libvconsole] Processing message type: {}, version: {}, length: {}, handle: {}",
-        //               msgType, header->version, header->length, header->handle);
-        processPacket(msgType, chunkBuf);
+        return false;
     }
+
+    VConChunk* header = reinterpret_cast<VConChunk*>(chunkBuf.data());
+    std::string msgType(header->type, 4);
+    processPacket(msgType, chunkBuf);
+    return true;
 }
 
 void VConsole::processPacket(const std::string& msgType, const std::vector<char>& chunkBuf)
@@ -154,9 +148,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "CFGV")
     {
         CFGV cfgv = parseCFGV(chunkBuf);
-    }
-    else
-    {
     }
 }
 
@@ -239,9 +230,7 @@ CHAN VConsole::parseCHAN(const std::vector<char>& chunkBuf)
     size_t remainingSize = chunkBuf.size() - sizeof(VConChunk) - sizeof(uint16_t);
     chan.numChannels = remainingSize / sizeof(Channel);
 
-
     data += sizeof(uint16_t);
-
 
     chan.channels.reserve(chan.numChannels);
     for (int i = 0; i < chan.numChannels; ++i)
