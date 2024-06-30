@@ -106,7 +106,7 @@
         <ClInclude Include="src\connection_cs2console.h"/>
         <ClInclude Include="src\connection_remoteserver.h"/>
         <ClInclude Include="src\logging.h"/>
-        <ClInclude Include="src\payloads.h"/>
+        <ClInclude Include="src\constants.h" />
         <ClInclude Include="src\singletons.h" />
         <ClInclude Include="src\tui.h"/>
         <ClInclude Include="src\utils.h"/>

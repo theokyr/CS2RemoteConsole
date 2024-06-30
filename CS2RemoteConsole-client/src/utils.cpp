@@ -1,6 +1,5 @@
 ﻿#include <iostream>
 #include "config.h"
-#include "payloads.h"
 #include "utils.h"
 #include "connection_cs2console.h"
 #include "connection_remoteserver.h"

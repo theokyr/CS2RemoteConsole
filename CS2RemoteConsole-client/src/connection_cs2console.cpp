@@ -19,17 +19,15 @@ bool connectToCS2Console()
     const std::string ip = Config::getInstance().get("cs2_console_ip", "127.0.0.1");
     const int port = Config::getInstance().getInt("cs2_console_port", 29000);
 
-    if (vconsole.connect(ip, port))
-    {
-        cs2ConsoleConnected = true;
-        spdlog::info("Connected to CS2 console at {}:{}", ip, port);
-        return true;
-    }
-    else
+    if (!vconsole.connect(ip, port))
     {
         spdlog::error("Failed to connect to CS2 console");
         return false;
     }
+
+    cs2ConsoleConnected = true;
+    spdlog::info("Connected to CS2 console at {}:{}", ip, port);
+    return true;
 }
 
 void cs2ConsoleConnectorLoop()

@@ -7,7 +7,7 @@
 #include <spdlog/sinks/callback_sink.h>
 
 #include "config.h"
-#include "payloads.h"
+#include "constants.h"
 #include "utils.h"
 #include "singletons.h"
 #include "connection_cs2console.h"
@@ -47,7 +47,9 @@ int main()
     {
         spdlog::set_level(spdlog::level::debug);
         std::vector<spdlog::sink_ptr> applicationSinks;
-        applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
+        std::stringstream ss;
+        ss << application_name << ".log";
+        applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str()));
         auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
         set_default_logger(applicationLogger);
 
@@ -81,7 +83,7 @@ int main()
             tui.addConsoleMessage(PRNT.channelID, PRNT.message);
         });
 
-        spdlog::info("Starting CS2RemoteConsole application");
+        spdlog::info("Starting {}", application_name);
 
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
         remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
