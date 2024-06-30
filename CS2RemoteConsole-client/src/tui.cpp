@@ -294,7 +294,11 @@ void TUI::setupLoggerCallbackSink()
     {
         logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([this](const spdlog::details::log_msg& msg)
         {
-            addConsoleMessage(APPLICATION_SPECIAL_CHANNEL_ID, std::string(msg.payload.begin(), msg.payload.end()));
+            auto severity = to_string_view(msg.level);
+            std::stringstream ss;
+            ss << "[" << std::string(severity.begin(), severity.end()) << "] " << std::string(msg.payload.begin(), msg.payload.end());
+
+            addConsoleMessage(APPLICATION_SPECIAL_CHANNEL_ID, ss.str());
         }));
     }
 }

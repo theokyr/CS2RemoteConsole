@@ -21,7 +21,6 @@ bool connectToCS2Console()
 
     if (!vconsole.connect(ip, port))
     {
-        spdlog::error("[CS2ConsoleConnection] Failed to connect to CS2 console");
         return false;
     }
 

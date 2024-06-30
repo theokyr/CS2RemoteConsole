@@ -6,14 +6,16 @@
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "advapi32.lib")
 
-#include <curses.h>
-#include <string>
+#include <atomic>
+#include <chrono>
 #include <deque>
 #include <functional>
 #include <mutex>
-#include <atomic>
-#include <chrono>
+#include <sstream>
+#include <string>
 #include <unordered_map>
+
+#include <curses.h>
 #include <spdlog/spdlog.h>
 
 const int APPLICATION_SPECIAL_CHANNEL_ID = -1337;
