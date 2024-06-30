@@ -73,7 +73,7 @@ jobs:
           mkdir -p CS2RemoteConsole-client\lib
           mkdir -p CS2RemoteConsole-client\include\libvconsole
           copy libvconsole-build\libvconsole.lib CS2RemoteConsole-client\lib\
-          copy libvconsole-build\*.h CS2RemoteConsole-client\include\libvconsole\
+          copy libvconsole-build\src\*.h CS2RemoteConsole-client\include\libvconsole\
         shell: cmd
 
       - name: Build CS2RemoteConsole-client
