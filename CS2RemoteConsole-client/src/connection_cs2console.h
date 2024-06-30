@@ -4,7 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include "libvconsole/vconsole.h"
+#include "vconsole.h"
 #include "singletons.h"
 
 #pragma comment(lib, "libvconsole.lib")

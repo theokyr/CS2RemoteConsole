@@ -78,6 +78,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <LinkIncremental>true</LinkIncremental>
+        <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)/libvconsole/src/</IncludePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <LinkIncremental>false</LinkIncremental>
@@ -115,8 +116,8 @@
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
         <Link>
-            <AdditionalLibraryDirectories>./lib</AdditionalLibraryDirectories>
-            <AdditionalDependencies></AdditionalDependencies>
+            <AdditionalLibraryDirectories>./lib;</AdditionalLibraryDirectories>
+            <AdditionalDependencies>$(SolutionDir)/x64/Debug/libvconsole.lib</AdditionalDependencies>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
