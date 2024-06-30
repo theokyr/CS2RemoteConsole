@@ -40,7 +40,8 @@ jobs:
           name: libvconsole-build
           path: |
             libvconsole/x64/Release/libvconsole.lib
-            libvconsole/src/*.h
+            libvconsole/src/messages.h
+            libvconsole/src/vconsole.h
 
   build-cs2remoteconsole-client:
     needs: build-libvconsole
@@ -65,15 +66,26 @@ jobs:
           path: libvconsole-build
 
       - name: Display structure of downloaded files
-        run: dir /s libvconsole-build
+        run: |
+          echo "Content of libvconsole-build:"
+          dir /s libvconsole-build
         shell: cmd
 
       - name: Prepare libvconsole for CS2RemoteConsole-client
         run: |
-          mkdir -p CS2RemoteConsole-client\lib
-          mkdir -p CS2RemoteConsole-client\include\libvconsole
-          copy libvconsole-build\libvconsole.lib CS2RemoteConsole-client\lib\
-          copy libvconsole-build\src\*.h CS2RemoteConsole-client\include\libvconsole\
+          if not exist "CS2RemoteConsole-client\lib" mkdir "CS2RemoteConsole-client\lib"
+          if not exist "CS2RemoteConsole-client\include" mkdir "CS2RemoteConsole-client\include"
+          copy "libvconsole-build\x64\Release\libvconsole.lib" "CS2RemoteConsole-client\lib\"
+          copy "libvconsole-build\src\messages.h" "CS2RemoteConsole-client\include\"
+          copy "libvconsole-build\src\vconsole.h" "CS2RemoteConsole-client\include\"
+        shell: cmd
+
+      - name: Verify copied files
+        run: |
+          echo "Verifying lib file:"
+          dir "CS2RemoteConsole-client\lib"
+          echo "Verifying header files:"
+          dir "CS2RemoteConsole-client\include"
         shell: cmd
 
       - name: Build CS2RemoteConsole-client
