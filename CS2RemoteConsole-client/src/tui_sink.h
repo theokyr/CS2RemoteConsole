@@ -1,5 +1,4 @@
-﻿// tui_sink.h
-#ifndef TUI_SINK_H
+﻿#ifndef TUI_SINK_H
 #define TUI_SINK_H
 
 #include <spdlog/sinks/base_sink.h>
@@ -17,7 +16,7 @@ protected:
     {
         spdlog::memory_buf_t formatted;
         spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
-        m_tui.addLogMessage(fmt::to_string(formatted));
+        m_tui.addConsoleMessage(-694201337, fmt::to_string(formatted));
     }
 
     void flush_() override {}

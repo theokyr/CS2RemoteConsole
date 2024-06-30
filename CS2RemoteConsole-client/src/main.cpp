@@ -19,12 +19,6 @@
 std::atomic<bool> applicationRunning(true);
 TUI tui;
 
-void tuiThread()
-{
-    tui.init();
-    tui.run();
-}
-
 void signalHandler(int signum)
 {
     auto logger = spdlog::get(LOGGER_APPLICATION);
@@ -46,61 +40,54 @@ void gracefulShutdown()
 
     WSACleanup();
 
-    std::cout << "CS2RemoteConsole shutdown complete. Bye - bye!..." << '\n';
+    std::cout << "CS2RemoteConsole shutdown complete. Bye-bye!..." << std::endl;
 }
 
 void setupLogging()
 {
-    spdlog::set_level(spdlog::level::debug);
-
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log");
     auto tui_sink = std::make_shared<tui_sink_mt>(tui);
-
-    std::vector<spdlog::sink_ptr> applicationSinks;
-    applicationSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/application.log"));
-    applicationSinks.push_back(tui_sink);
-    auto applicationLogger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, begin(applicationSinks), end(applicationSinks));
-    register_logger(applicationLogger);
-
-    std::vector<spdlog::sink_ptr> protocolSinks;
-    protocolSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/protocol.log"));
-    protocolSinks.push_back(tui_sink);
-    auto protocolLogger = std::make_shared<spdlog::logger>(LOGGER_VCON, begin(protocolSinks), end(protocolSinks));
-    register_logger(protocolLogger);
-
-    std::vector<spdlog::sink_ptr> remoteServerSinks;
-    remoteServerSinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/remote.log"));
-    remoteServerSinks.push_back(tui_sink);
-    auto remoteServerLogger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, begin(remoteServerSinks), end(remoteServerSinks));
-    register_logger(remoteServerLogger);
+    
+    auto default_logger = std::make_shared<spdlog::logger>("default", file_sink);
+    spdlog::set_level(spdlog::level::debug);
+    default_logger->sinks().push_back(tui_sink);
+    spdlog::set_default_logger(default_logger);
+    
+    auto application_logger = std::make_shared<spdlog::logger>(LOGGER_APPLICATION, tui_sink);
+    auto vconsole_logger = std::make_shared<spdlog::logger>(LOGGER_VCON, tui_sink);
+    auto remote_server_logger = std::make_shared<spdlog::logger>(LOGGER_REMOTE_SERVER, tui_sink);
+    
+    spdlog::register_logger(application_logger);
+    spdlog::register_logger(vconsole_logger);
+    spdlog::register_logger(remote_server_logger);
 }
 
 int main()
 {
     try
     {
-        setupLogging();
-        std::thread uiThread(tuiThread);
-
-        Sleep(1000);
-
-        
-        signal(SIGINT, signalHandler);
 
         if (!setupConfig() || !setupApplicationWinsock())
         {
             return 1;
         }
+        
+        tui.init();
+        
+        setupLogging();
+        
+        auto logger = spdlog::get(LOGGER_APPLICATION);
+        logger->info("Starting CS2RemoteConsole application");
+        
+        signal(SIGINT, signalHandler);
 
         tui.setCommandCallback([](const std::string& command)
         {
             sendPayloadToCS2Console(command);
         });
 
-        cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
-        remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
-
         auto& vconsole = VConsoleSingleton::getInstance();
-        vconsole.setOnCHANReceived([](const CHAN& CHAN)
+        vconsole.setOnCHANReceived([&](const CHAN& CHAN)
         {
             for (const auto& channel : CHAN.channels)
             {
@@ -108,16 +95,16 @@ int main()
             }
         });
 
-        vconsole.setOnPRNTReceived([](const PRNT& PRNT)
+        vconsole.setOnPRNTReceived([&](const PRNT& PRNT)
         {
             tui.addConsoleMessage(PRNT.channelID, PRNT.message);
         });
 
-        while (applicationRunning)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+        cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
+        remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
 
+        tui.run();
+        
         gracefulShutdown();
     }
     catch (const std::exception& e)

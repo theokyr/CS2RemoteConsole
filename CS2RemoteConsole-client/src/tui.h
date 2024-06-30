@@ -8,7 +8,7 @@
 
 #include <curses.h>
 #include <string>
-#include <vector>
+#include <deque>
 #include <functional>
 #include <mutex>
 #include <atomic>
@@ -27,6 +27,7 @@ struct ConsoleMessage
 {
     int channelId;
     std::string message;
+    std::chrono::system_clock::time_point timestamp;
 };
 
 class TUI
@@ -40,50 +41,47 @@ public:
     void shutdown();
 
     void setCommandCallback(std::function<void(const std::string&)> callback);
-    void addLogMessage(const std::string& message);
     void addConsoleMessage(int channelId, const std::string& message);
     void registerChannel(int id, const std::string& name, uint32_t color);
-
-    WINDOW* m_consoleWindow;
+    void setConsoleDirty(bool dirty);
 
 private:
+    static const size_t MAX_CONSOLE_MESSAGES = 10000;
+    static const int MOUSE_SCROLL_SPEED = 3; // Scroll speed multiplier for mouse wheel
+    static const int EXTENDED_COLOR_BASE = 256;
+
     std::unordered_map<uint32_t, short> m_colorCache;
-    short m_nextColorPairId = 1; // Start from 1, 0 is reserved
+    short m_nextColorPairId = 1;
     bool m_useExtendedColors;
 
-    static const size_t MAX_LOG_MESSAGES = 1000;
-    static const size_t MAX_CONSOLE_MESSAGES = 1000;
-
-    WINDOW* m_logWindow;
+    WINDOW* m_consoleWindow;
     WINDOW* m_inputWindow;
-    std::vector<std::string> m_logMessages;
-    std::vector<ConsoleMessage> m_consoleMessages;
+    std::deque<ConsoleMessage> m_consoleMessages;
     std::unordered_map<int, ConsoleChannel> m_channels;
 
     std::string m_inputBuffer;
     std::function<void(const std::string&)> m_commandCallback;
-    std::mutex m_logMutex;
     std::mutex m_consoleMutex;
     std::mutex m_channelsMutex;
     std::atomic<bool> m_running;
     std::atomic<bool> m_needsResize;
     int m_lastWidth;
     int m_lastHeight;
+    size_t m_scrollPosition;
+    std::atomic<bool> m_consoleDirty;
+    std::chrono::steady_clock::time_point m_lastUpdate;
 
-    std::shared_ptr<spdlog::logger> logger;
-
-    void checkResize();
     void createWindows();
     void destroyWindows();
     void drawConsoleWindow();
     void drawInputWindow();
-    void drawLogWindow();
     void drawWindows();
+    void updateInputWindow(); // New method to update only the input window
     void handleInput();
     void handleResize();
     void resizeWindows(int height, int width);
+    void scrollConsole(int direction);
 
-    static const int EXTENDED_COLOR_BASE = 256;
     short mapTo256Color(uint32_t color);
     void initializeColor(uint32_t color, short& colorPairId);
 };
