@@ -13,7 +13,8 @@ CS2RemoteConsole is a C++ utility for remotely interacting with Counter-Strike 2
 
 ## Disclaimer
 
-Use responsibly and in accordance with the [Counter-Strike Fair Play Guidelines](https://blog.counter-strike.net/index.php/fair-play-guidelines/). This tool is for educational and development purposes only and should only be used in `-tools` mode.
+Use responsibly and in accordance with the [Counter-Strike Fair Play Guidelines](https://blog.counter-strike.net/index.php/fair-play-guidelines/). This tool is
+for educational and development purposes only and should only be used in `-tools` mode.
 
 ## Requirements
 
@@ -22,9 +23,9 @@ Use responsibly and in accordance with the [Counter-Strike Fair Play Guidelines]
 - Windows OS
 - Counter-Strike 2 running in `-tools` mode
 - C++ compiler with C++17 support
-- PDCurses library
 - Winsock2 library
-- spdlog library
+- [PDCursesMod](https://github.com/Bill-Gray/PDCursesMod) library
+- [spdlog](https://github.com/gabime/spdlog) library
 
 ### Server
 
@@ -84,9 +85,8 @@ Edit `config.ini` to customize:
 1. Ensure `config.ini` is in the same directory as the executable or in the current working directory
 2. Run the program
 3. Use the TUI to interact with the CS2 console:
-   - Type commands and press Enter to send them to CS2
-   - Use Page Up/Down or mouse wheel to scroll through console output
-   - Console messages are color-coded based on their channels
+    - Type commands and press Enter to send them to CS2
+    - Use Page Up/Down or mouse wheel to scroll through console output
 
 ### Server
 
