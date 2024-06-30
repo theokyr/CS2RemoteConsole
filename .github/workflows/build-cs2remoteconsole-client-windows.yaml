@@ -1,18 +1,48 @@
-﻿name: Build CS2RemoteConsole-client
+﻿name: Build libvconsole and CS2RemoteConsole-client
 
 on:
   push:
     branches: [ main ]
     paths:
+      - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
   pull_request:
     branches: [ main ]
     paths:
+      - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
   workflow_dispatch:
 
 jobs:
-  build:
+  build-libvconsole:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Build libvconsole
+        run: |
+          cd libvconsole
+          msbuild libvconsole.vcxproj /p:Configuration=Release /p:Platform=x64
+
+      - name: Upload libvconsole artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: libvconsole
+          path: |
+            libvconsole/x64/Release/libvconsole.lib
+            libvconsole/src/*.h
+
+  build-cs2remoteconsole-client:
+    needs: build-libvconsole
     runs-on: windows-latest
     
     steps:
@@ -35,9 +65,9 @@ jobs:
       - name: Copy libvconsole files
         run: |
           mkdir -p CS2RemoteConsole-client/lib
-          mkdir -p CS2RemoteConsole-client/include
+          mkdir -p CS2RemoteConsole-client/include/libvconsole
           copy libvconsole\libvconsole.lib CS2RemoteConsole-client\lib\
-          copy libvconsole\*.h CS2RemoteConsole-client\include\
+          copy libvconsole\src\*.h CS2RemoteConsole-client\include\libvconsole
 
       - name: Build CS2RemoteConsole-client
         run: |
