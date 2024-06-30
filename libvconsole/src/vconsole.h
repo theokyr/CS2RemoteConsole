@@ -51,7 +51,7 @@ public:
         return &channels;
     }
 
-    void setOnPRNTReceived(std::function<void(const std::string&, const PRNT&)> callback);
+    void setOnPRNTReceived(std::function<void(const PRNT&)> callback);
     void setOnCVARsLoaded(std::function<void(const std::vector<Cvar>&)> callback);
     void setOnADONReceived(std::function<void(const std::string&)> callback);
     void setOnDisconnected(std::function<void()> callback);
@@ -63,7 +63,7 @@ public:
 private:
     SOCKET clientSocket;
 
-    std::function<void(const std::string&, const PRNT&)> onPRNTReceived;
+    std::function<void(const PRNT&)> onPRNTReceived;
     std::function<void(const std::vector<Cvar>&)> onCVARsLoaded;
     std::function<void(const std::string&)> onADONReceived;
     std::function<void()> onDisconnected;

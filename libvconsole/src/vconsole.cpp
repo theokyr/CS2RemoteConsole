@@ -135,22 +135,11 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "PRNT")
     {
         PRNT prnt = parsePRNT(chunkBuf);
-        auto it = std::find_if(channels.begin(), channels.end(), [&](const Channel& ch) { return ch.id == prnt.channelID; });
-        if (it != channels.end())
-        {
-            prnt.message = stripNonAscii(prnt.message);
+        prnt.message = stripNonAscii(prnt.message);
 
-            if (onPRNTReceived)
-            {
-                onPRNTReceived(it->name, prnt);
-            }
-        }
-        else
+        if (onPRNTReceived)
         {
-            if (onPRNTReceived)
-            {
-                onPRNTReceived("unknown", prnt);
-            }
+            onPRNTReceived(prnt);
         }
     }
     else if (msgType == "CVAR")
@@ -171,7 +160,7 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     }
 }
 
-void VConsole::setOnPRNTReceived(std::function<void(const std::string&, const PRNT&)> callback)
+void VConsole::setOnPRNTReceived(std::function<void(const PRNT&)> callback)
 {
     onPRNTReceived = callback;
 }
