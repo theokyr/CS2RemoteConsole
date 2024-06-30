@@ -85,7 +85,7 @@ int main()
         std::thread uiThread(tuiThread);
 
         Sleep(1000);
-        
+
         setupLogging();
         signal(SIGINT, signalHandler);
 
@@ -105,25 +105,17 @@ int main()
         auto& vconsole = VConsoleSingleton::getInstance();
         vconsole.setOnPRNTReceived([](const std::string& source, const PRNT& PRNT)
         {
-            auto& vconsole = VConsoleSingleton::getInstance();
-            auto& channels = vconsole.channels;
-            auto it = std::find_if(channels.begin(), channels.end(), [&](const Channel& ch) { return ch.id == PRNT.channelID; });
-            if (it != channels.end())
+            auto& vconsole = VConsoleSingleton::getInstance(); // FIXME: evil lambda instance bs
+            auto channels = vconsole.getChannels();
+            auto it = std::find_if(channels->begin(), channels->end(), [&](const Channel& ch) { return ch.id == PRNT.channelID; });
+            if (it != channels->end())
             {
-                std::string colorcode = getColorCode(it->text_RGBA_override);
-
-
-
-                std::string channelName = std::string(it->name);
-                std::string message = std::string(PRNT.message);
-
-                tui.addConsoleMessage(channelName, message, it->text_RGBA_override);
+                tui.addConsoleMessage(it->name, PRNT.message, it->text_RGBA_override);
             }
             else
             {
-                tui.addConsoleMessage("unknown", "", it->text_RGBA_override);
+                tui.addConsoleMessage("unknown", PRNT.message);
             }
-            
         });
 
         // Main application loop

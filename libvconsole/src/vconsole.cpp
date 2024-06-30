@@ -127,7 +127,10 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
     else if (msgType == "CHAN")
     {
         CHAN chan = parseCHAN(chunkBuf);
-        channels = chan.channels;
+        if (onCHANReceived)
+        {
+            onCHANReceived(chan);
+        }
     }
     else if (msgType == "PRNT")
     {
@@ -144,7 +147,6 @@ void VConsole::processPacket(const std::string& msgType, const std::vector<char>
         }
         else
         {
-
             if (onPRNTReceived)
             {
                 onPRNTReceived("unknown", prnt);
@@ -187,6 +189,11 @@ void VConsole::setOnADONReceived(std::function<void(const std::string&)> callbac
 void VConsole::setOnDisconnected(std::function<void()> callback)
 {
     onDisconnected = callback;
+}
+
+void VConsole::setOnCHANReceived(std::function<void(const CHAN&)> callback)
+{
+    onCHANReceived = callback;
 }
 
 bool setupWinsock()
