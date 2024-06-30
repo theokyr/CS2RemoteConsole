@@ -46,10 +46,16 @@ public:
     void sendCmd(const std::string& cmd);
     int readChunk(std::vector<char>& outputBuf);
 
-    void setOnPRNTReceived(std::function<void(const std::string&, const std::string&)> callback);
+    std::vector<Channel>* getChannels()
+    {
+        return &channels;
+    }
+
+    void setOnPRNTReceived(std::function<void(const PRNT&)> callback);
     void setOnCVARsLoaded(std::function<void(const std::vector<Cvar>&)> callback);
     void setOnADONReceived(std::function<void(const std::string&)> callback);
     void setOnDisconnected(std::function<void()> callback);
+    void setOnCHANReceived(std::function<void(const CHAN&)> callback);
 
     void processIncomingData();
     SOCKET getSocket() const { return clientSocket; }
@@ -57,10 +63,11 @@ public:
 private:
     SOCKET clientSocket;
 
-    std::function<void(const std::string&, const std::string&)> onPRNTReceived;
+    std::function<void(const PRNT&)> onPRNTReceived;
     std::function<void(const std::vector<Cvar>&)> onCVARsLoaded;
     std::function<void(const std::string&)> onADONReceived;
     std::function<void()> onDisconnected;
+    std::function<void(const CHAN&)> onCHANReceived;
 
     std::vector<Channel> channels;
     std::vector<Cvar> cvars;

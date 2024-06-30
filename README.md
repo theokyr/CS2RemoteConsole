@@ -1,107 +1,118 @@
 ﻿# CS2RemoteConsole
 
-A C++ utility for sending commands to Counter-Strike 2's console remotely, with support for a centralized remote server.
+CS2RemoteConsole is a C++ utility for remotely interacting with Counter-Strike 2's console, featuring a TUI and support for a centralized remote server.
 
 ## Features
 
-- Connect to CS2's console socket
-- Connect to a remote control server
-- Send predefined and custom commands
-- Listen for console output
+- Connect, read, and write messages to CS2 through the VConsole socket
+- Connect and receive commands from a remote control server
+- Display console output with channel-based coloring
 - Configurable settings via INI file
 - Cross-platform remote server (Windows and Linux)
+- Text-based User Interface for easy interaction
 
-## Usage
+## Disclaimer
 
-### Client
-
-1. Ensure the `config.ini` file is in the same directory as the executable or in the current working directory.
-2. Run the program.
-3. Use the following commands:
-   - `0`: Disable smooth
-   - `1`: Enable smooth
-   - `y`: Toggle console output listening
-   - `cmd <your_command>`: Send a custom command (e.g., `cmd noclip`)
-   - `x`: Exit the program
-
-### Server
-
-1. Run the server program.
-2. Enter commands to be broadcasted to all connected clients.
-3. Type 'quit' to exit the server.
-
-## Configuration
-
-Edit `config.ini` to customize:
-- `cs2_console_ip`: IP address of the CS2 console (default: 127.0.0.1)
-- `cs2_console_port`: Port number of the CS2 console (default: 29000)
-- `cs2_console_reconnect_delay`: Delay in milliseconds before reconnection attempts (default: 5000)
-- `remote_server_ip`: IP address of the remote control server (default: 127.0.0.1)
-- `remote_server_port`: Port number of the remote control server (default: 42069)
-- `remote_server_reconnect_delay`: Delay in milliseconds before reconnection attempts to the remote server (default: 5000)
-- `debug_sanity`: Enable or disable debug sanity checks (default: 0)
+Use responsibly and in accordance with the [Counter-Strike Fair Play Guidelines](https://blog.counter-strike.net/index.php/fair-play-guidelines/). This tool is for educational and development purposes only and should only be used in `-tools` mode.
 
 ## Requirements
 
 ### Client
+
 - Windows OS
-- Counter-Strike 2
-- C++ compiler with C++11 support
+- Counter-Strike 2 running in `-tools` mode
+- C++ compiler with C++17 support
+- PDCurses library
 - Winsock2 library
+- spdlog library
 
 ### Server
+
 - Windows or Linux OS
 - C++ compiler with C++11 support
 - Winsock2 library (Windows only)
 
-## Build Instructions
+## Building
 
-### Client (Windows)
+### Client (Windows Only)
+
 1. Open the project in Visual Studio
-2. Build the solution
+2. Ensure all required libraries are properly linked
+3. Build the solution
 
-### Server (Windows)
+### Server
+
+#### Windows
+
 1. Open the server project in Visual Studio
 2. Build the solution
 
-### Server (Linux)
+#### Linux
+
 1. Navigate to the server directory
 2. Run the following command:
    ```
    g++ -std=c++11 -pthread main.cpp -o server
    ```
-3. The compiled server executable will be named `server`
 
-### Server (Docker)
-You can build and run the server using Docker, which works on both Windows and Linux:
+#### Docker
 
-1. Ensure you have Docker and Docker Compose installed on your system.
-2. Navigate to the `docker` directory in the project:
+1. Ensure Docker and Docker Compose are installed
+2. Navigate to the `docker` directory
+3. Build and run:
    ```
-   cd docker
-   ```
-3. Build the Docker image:
-   ```
-   docker-compose build
-   ```
-4. Run the server in a container:
-   ```
-   docker-compose up
-   ```
-   Or, to run it in detached mode:
-   ```
-   docker-compose up -d
-   ```
-5. To stop the server:
-   ```
-   docker-compose down
+   docker-compose up --build
    ```
 
-## Notes
+## Configuration
 
-- Ensure CS2 is running in `-tools` mode
-- Use responsibly and in accordance with the game's terms of service
+Edit `config.ini` to customize:
+
+- `cs2_console_ip`: IP address of the CS2 console (default: 127.0.0.1)
+- `cs2_console_port`: Port number of the CS2 console (default: 29000)
+- `cs2_console_reconnect_delay`: Reconnection delay in milliseconds (default: 5000)
+- `remote_server_ip`: IP address of the remote control server (default: 127.0.0.1)
+- `remote_server_port`: Port number of the remote control server (default: 42069)
+- `remote_server_reconnect_delay`: Remote server reconnection delay in milliseconds (default: 5000)
+- `debug_sanity_enabled`: Enable or disable debug sanity checks (default: 0)
+- `debug_sanity_interval`: Interval for debug sanity checks in milliseconds (default: 5000)
+
+## Usage
+
+### Client
+
+1. Ensure `config.ini` is in the same directory as the executable or in the current working directory
+2. Run the program
+3. Use the TUI to interact with the CS2 console:
+   - Type commands and press Enter to send them to CS2
+   - Use Page Up/Down or mouse wheel to scroll through console output
+   - Console messages are color-coded based on their channels
+
+### Server
+
+1. Run the server program
+2. Enter commands to be broadcasted to all connected clients
+3. Type 'quit' to exit the server
+
+## Architecture
+
+CS2RemoteConsole consists of three main components:
+
+1. **Client**: Connects to both CS2 console and the remote server. It features a TUI for user interaction and displays console output.
+2. **Server**: Acts as a central hub for multiple clients, allowing command broadcasting.
+3. **libvconsole**: A static library implementing the VConsole2 Protocol used by Source 2 games.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 
-[MIT License](LICENSE)
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- [Penguinwizzard/VConsoleLib](https://github.com/Penguinwizzard/VConsoleLib)
+- [uilton-oliveira/VConsoleLib.python](https://github.com/uilton-oliveira/VConsoleLib.python)
+
+We express our gratitude to the original authors of these libraries, which served as a foundation for our VConsole protocol implementation.

@@ -66,17 +66,17 @@ bool setupConfig()
     {
         try
         {
-            spdlog::info("[Main] Attempting to load config from: {}", path);
+            spdlog::info("[Config] Attempting to load config from: {}", path);
             Config::getInstance().load(path);
-            spdlog::info("[Main] Config loaded successfully from: {}", path);
+            spdlog::info("[Config] Config loaded successfully from: {}", path);
             return true;
         }
         catch (const std::exception& e)
         {
-            spdlog::error("[Main] Failed to load config from: {}: {}", path, e.what());
+            spdlog::error("[Config] Failed to load config from: {}: {}", path, e.what());
         }
     }
 
-    spdlog::error("[Main] Failed to load config from any location.");
+    spdlog::error("[Config] Failed to load config from any location.");
     return false;
 }
