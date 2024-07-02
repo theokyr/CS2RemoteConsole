@@ -2,12 +2,12 @@
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
