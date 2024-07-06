@@ -271,11 +271,7 @@ PRNT VConsole::parsePRNT(const std::vector<char>& chunkBuf)
     prnt.channelID = ntohl(*reinterpret_cast<const int32_t*>(data));
     memcpy(prnt.unknown, data + 4, 20);
     memcpy(&prnt.color, data + 12, 4);
-    uint8_t ctest[4];
-    memcpy(ctest, data + 12, 4);
-    //if (prnt.color == 1932489586)
-        //printf("test");
-
+    prnt.color = _byteswap_ulong(prnt.color);  //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
     prnt.message = std::string(data + 28);
     prnt.message = stripNonAscii(prnt.message); // Strip non-ASCII characters
     return prnt;

@@ -190,7 +190,7 @@ void TUI::drawConsoleWindow()
         }
         if (currentMessage.color)
         {
-            colorPairId =  initializeColor( _byteswap_ulong(currentMessage.color) ); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
+            colorPairId =  initializeColor(currentMessage.color);
         }
 
         if (colorPairId != 0)
