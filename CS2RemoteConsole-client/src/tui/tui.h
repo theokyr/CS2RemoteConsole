@@ -46,7 +46,7 @@ public:
 
     void setCommandCallback(std::function<void(const std::string&)> callback);
     void addConsoleMessage(int channelId, const std::string& message);
-    void registerChannel(int id, const std::string& name, uint32_t color);
+    void registerChannel(int id, const std::string& name, uint32_t color, uint32_t backgroundColor = 0);
     void setConsoleDirty(bool dirty);
     void setupLoggerCallbackSink();
 
@@ -55,8 +55,9 @@ private:
     static const int MOUSE_SCROLL_SPEED = 3; // Scroll speed multiplier for mouse wheel
     static const int EXTENDED_COLOR_BASE = 256;
 
-    std::unordered_map<uint32_t, short> m_colorCache;
+    std::unordered_map<long long, short> m_colorCache;
     short m_nextColorPairId = 1;
+    int m_nextColorId = 1;
     bool m_useExtendedColors;
 
     WINDOW* m_consoleWindow;
@@ -88,7 +89,7 @@ private:
     void scrollConsole(int direction);
 
     short mapTo256Color(uint32_t color);
-    void initializeColor(uint32_t color, short& colorPairId);
+    short initializeColor(uint32_t color, uint32_t backgroundColor = 0);
 };
 
 #endif // TUI_H

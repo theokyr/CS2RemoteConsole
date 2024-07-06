@@ -58,7 +58,7 @@ int main()
         }
 
         tui.init();
-        tui.registerChannel(APPLICATION_SPECIAL_CHANNEL_ID, "Log", 4285057279);
+        tui.registerChannel(APPLICATION_SPECIAL_CHANNEL_ID, "Log", 0xD0D0D0FF, 0x2D0034FF); //
         tui.setupLoggerCallbackSink();
 
         signal(SIGINT, signalHandler);
