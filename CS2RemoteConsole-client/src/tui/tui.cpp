@@ -79,12 +79,14 @@ void TUI::setCommandCallback(std::function<void(const std::string&)> callback)
     m_commandCallback = callback;
 }
 
-void TUI::addConsoleMessage(int channelId, const std::string& message)
-{
+void TUI::addConsoleMessage(int channelId, const std::string& message, uint32_t msgColor) //no background color required, this is only for PRNT as of now, which doesn't deliver background colors anyways
+{ 
     std::lock_guard<std::mutex> lock(m_consoleMutex);
     ConsoleMessage cMessage;
     cMessage.channelId = channelId;
+    cMessage.color = _byteswap_ulong(msgColor); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
     cMessage.message = message;
+
     cMessage.timestamp = std::chrono::system_clock::now();
 
     m_consoleMessages.push_back(cMessage);
@@ -95,7 +97,7 @@ void TUI::addConsoleMessage(int channelId, const std::string& message)
     m_consoleDirty = true;
 }
 
-void TUI::registerChannel(int id, const std::string& name, uint32_t color)
+void TUI::registerChannel(int id, const std::string& name, uint32_t color, uint32_t backgroundColor)
 {
     std::lock_guard<std::mutex> lock(m_channelsMutex);
 
@@ -110,10 +112,7 @@ void TUI::registerChannel(int id, const std::string& name, uint32_t color)
         {
             if (m_nextColorPairId < COLOR_PAIRS)
             {
-                short colorPairId = m_nextColorPairId++;
-                initializeColor(color, colorPairId);
-                m_colorCache[color] = colorPairId;
-                channel.colorPairId = colorPairId;
+                channel.colorPairId = initializeColor(color, backgroundColor);
             }
             else
             {
@@ -173,21 +172,25 @@ void TUI::drawConsoleWindow()
 
         std::string prefix;
         short colorPairId = 0;
-
-        if (currentMessage.channelId == APPLICATION_SPECIAL_CHANNEL_ID)
+        
+        if (channelIt != m_channels.end())
         {
-            prefix = "";
-            colorPairId = m_colorCache[4285057279];
-        }
-        else if (channelIt != m_channels.end())
-        {
-            const auto& channel = channelIt->second;
-            prefix = "[" + channel.name + "] ";
-            colorPairId = channel.colorPairId;
+            colorPairId = channelIt->second.colorPairId;
+            prefix = "[" + channelIt->second.name + "] ";
         }
         else
         {
             prefix = "[Unknown] ";
+        }
+
+
+        if (currentMessage.channelId == APPLICATION_SPECIAL_CHANNEL_ID)
+        {
+            prefix = "";
+        }
+        if (currentMessage.color)
+        {
+            colorPairId =  initializeColor(currentMessage.color);
         }
 
         if (colorPairId != 0)
@@ -353,21 +356,49 @@ short TUI::mapTo256Color(uint32_t color)
         round(b / 255.0 * 5));
 }
 
-void TUI::initializeColor(uint32_t color, short& colorPairId)
+short TUI::initializeColor(uint32_t color, uint32_t backgroundColor)
 {
+    long long combinedColor = (((long long)color) << 32) | (backgroundColor & 0xffffffffL);
+
+    short colorPairId = 0;
+
     int r = (color >> 24) & 0xFF;
     int g = (color >> 16) & 0xFF;
     int b = (color >> 8) & 0xFF;
 
-    if (m_useExtendedColors)
+    int br = (backgroundColor >> 24) & 0xFF;
+    int bg = (backgroundColor >> 16) & 0xFF;
+    int bb = (backgroundColor >> 8) & 0xFF;
+
+    if (m_colorCache.find(combinedColor) == m_colorCache.end())
     {
-        int colorNumber = EXTENDED_COLOR_BASE + colorPairId;
-        init_color(colorNumber, r * 1000 / 255, g * 1000 / 255, b * 1000 / 255);
-        init_pair(colorPairId, colorNumber, -1);
+        colorPairId = m_nextColorPairId++;
+        if (m_useExtendedColors)
+        {
+            int colorNumber = EXTENDED_COLOR_BASE + m_nextColorId++;
+            int bColorNumber = -1;
+            if (backgroundColor)
+                bColorNumber = EXTENDED_COLOR_BASE + m_nextColorId++;
+            init_color(colorNumber, r * 1000 / 255, g * 1000 / 255, b * 1000 / 255);
+            init_color(bColorNumber, br * 1000 / 255, bg * 1000 / 255, bb * 1000 / 255);
+            color_content(colorNumber, (short*)&r, (short*)&g, (short*)&b);
+            init_pair(colorPairId, colorNumber, bColorNumber);
+        }
+        else
+        {
+            short nearestColor = mapTo256Color(color);
+            short bNearestColor = -1;
+            if (backgroundColor)
+                bNearestColor = mapTo256Color(backgroundColor);
+            init_pair(colorPairId, nearestColor, bNearestColor);
+        }
+        m_colorCache[combinedColor] = colorPairId;
     }
     else
     {
-        short nearestColor = mapTo256Color(color);
-        init_pair(colorPairId, nearestColor, -1);
+
+        colorPairId = m_colorCache.find(combinedColor)->second;
     }
+
+    return colorPairId;
 }
