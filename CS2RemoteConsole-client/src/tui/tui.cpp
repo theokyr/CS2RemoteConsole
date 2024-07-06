@@ -80,11 +80,11 @@ void TUI::setCommandCallback(std::function<void(const std::string&)> callback)
 }
 
 void TUI::addConsoleMessage(int channelId, const std::string& message, uint32_t msgColor) //no background color required, this is only for PRNT as of now, which doesn't deliver background colors anyways
-{
+{ 
     std::lock_guard<std::mutex> lock(m_consoleMutex);
     ConsoleMessage cMessage;
     cMessage.channelId = channelId;
-    cMessage.color = msgColor;
+    cMessage.color = _byteswap_ulong(msgColor); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
     cMessage.message = message;
 
     cMessage.timestamp = std::chrono::system_clock::now();
