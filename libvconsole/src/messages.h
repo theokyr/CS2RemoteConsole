@@ -42,7 +42,8 @@ struct CHAN {
 
 struct PRNT {
     int32_t channelID;
-    uint8_t unknown[24];
+    uint8_t unknown[20];
+    uint32_t color;
     std::string message;
 };
 

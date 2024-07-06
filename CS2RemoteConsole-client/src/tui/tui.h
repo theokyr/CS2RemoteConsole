@@ -30,6 +30,7 @@ struct ConsoleChannel
 struct ConsoleMessage
 {
     int channelId;
+    uint32_t color;
     std::string message;
     std::chrono::system_clock::time_point timestamp;
 };
@@ -45,7 +46,7 @@ public:
     void shutdown();
 
     void setCommandCallback(std::function<void(const std::string&)> callback);
-    void addConsoleMessage(int channelId, const std::string& message);
+    void addConsoleMessage(int channelId, const std::string& message, uint32_t msgColor = 0);
     void registerChannel(int id, const std::string& name, uint32_t color, uint32_t backgroundColor = 0);
     void setConsoleDirty(bool dirty);
     void setupLoggerCallbackSink();

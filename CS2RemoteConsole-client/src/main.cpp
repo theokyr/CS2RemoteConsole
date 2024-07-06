@@ -58,7 +58,7 @@ int main()
         }
 
         tui.init();
-        tui.registerChannel(APPLICATION_SPECIAL_CHANNEL_ID, "Log", 0xD0D0D0FF, 0x2D0034FF); //
+        tui.registerChannel(APPLICATION_SPECIAL_CHANNEL_ID, "Log", 0xD0D0D0FF, 0x2D0034FF); //light grey and purple
         tui.setupLoggerCallbackSink();
 
         signal(SIGINT, signalHandler);
@@ -79,7 +79,7 @@ int main()
 
         vconsole.setOnPRNTReceived([&](const PRNT& PRNT)
         {
-            tui.addConsoleMessage(PRNT.channelID, PRNT.message);
+            tui.addConsoleMessage(PRNT.channelID, PRNT.message, PRNT.color);
         });
 
         spdlog::info("[Main] Starting {}", application_name);

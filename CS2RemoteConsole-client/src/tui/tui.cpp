@@ -79,12 +79,14 @@ void TUI::setCommandCallback(std::function<void(const std::string&)> callback)
     m_commandCallback = callback;
 }
 
-void TUI::addConsoleMessage(int channelId, const std::string& message)
+void TUI::addConsoleMessage(int channelId, const std::string& message, uint32_t msgColor) //no background color required, this is only for PRNT as of now, which doesn't deliver background colors anyways
 {
     std::lock_guard<std::mutex> lock(m_consoleMutex);
     ConsoleMessage cMessage;
     cMessage.channelId = channelId;
+    cMessage.color = msgColor;
     cMessage.message = message;
+
     cMessage.timestamp = std::chrono::system_clock::now();
 
     m_consoleMessages.push_back(cMessage);
@@ -170,22 +172,25 @@ void TUI::drawConsoleWindow()
 
         std::string prefix;
         short colorPairId = 0;
-
-        if (currentMessage.channelId == APPLICATION_SPECIAL_CHANNEL_ID)
+        
+        if (channelIt != m_channels.end())
         {
-            const auto& channel = channelIt->second;
-            prefix = "";
-            colorPairId = channel.colorPairId; // m_colorCache[4285057279];
-        }
-        else if (channelIt != m_channels.end())
-        {
-            const auto& channel = channelIt->second;
-            prefix = "[" + channel.name + "] ";
-            colorPairId = channel.colorPairId;
+            colorPairId = channelIt->second.colorPairId;
+            prefix = "[" + channelIt->second.name + "] ";
         }
         else
         {
             prefix = "[Unknown] ";
+        }
+
+
+        if (currentMessage.channelId == APPLICATION_SPECIAL_CHANNEL_ID)
+        {
+            prefix = "";
+        }
+        if (currentMessage.color)
+        {
+            colorPairId =  initializeColor( _byteswap_ulong(currentMessage.color) ); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
         }
 
         if (colorPairId != 0)
@@ -353,9 +358,6 @@ short TUI::mapTo256Color(uint32_t color)
 
 short TUI::initializeColor(uint32_t color, uint32_t backgroundColor)
 {
-    //int lo; // Integer to fill lower bits
-    //int hi; // Integer to fill upper bits
-
     long long combinedColor = (((long long)color) << 32) | (backgroundColor & 0xffffffffL);
 
     short colorPairId = 0;
@@ -390,6 +392,7 @@ short TUI::initializeColor(uint32_t color, uint32_t backgroundColor)
                 bNearestColor = mapTo256Color(backgroundColor);
             init_pair(colorPairId, nearestColor, bNearestColor);
         }
+        m_colorCache[combinedColor] = colorPairId;
     }
     else
     {
@@ -397,6 +400,5 @@ short TUI::initializeColor(uint32_t color, uint32_t backgroundColor)
         colorPairId = m_colorCache.find(combinedColor)->second;
     }
 
-    m_colorCache[combinedColor] = colorPairId;
     return colorPairId;
 }
