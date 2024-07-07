@@ -1,6 +1,5 @@
 ﻿#include "connection_remoteserver.h"
 #include <iostream>
-#include <ws2tcpip.h>
 #include <chrono>
 #include <spdlog/spdlog.h>
 
@@ -36,6 +35,24 @@ bool connectToRemoteServer()
     }
 
     spdlog::info("[RemoteServerConnection] Connected to remote server at {}:{}", ip, port);
+    return true;
+}
+
+bool sendMessageToRemoteServer(const std::string& message)
+{
+    if (remoteServerSock == INVALID_SOCKET)
+    {
+        spdlog::error("[RemoteServerConnection] Cannot send message: Not connected to remote server");
+        return false;
+    }
+
+    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()), 0);
+    if (sendResult == SOCKET_ERROR)
+    {
+        spdlog::error("[RemoteServerConnection] Failed to send message to remote server: {}", WSAGetLastError());
+        return false;
+    }
+
     return true;
 }
 
