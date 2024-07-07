@@ -1,0 +1,47 @@
+﻿name: Build CS2RemoteConsole-server (Linux)
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'CS2RemoteConsole-server/**'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'CS2RemoteConsole-server/**'
+  workflow_dispatch:
+
+jobs:
+  build-cs2remoteconsole-server-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
+
+      - name: Build CS2RemoteConsole-server
+        run: |
+          cd CS2RemoteConsole-server
+          make
+
+      - name: Prepare artifact directory
+        run: |
+          mkdir -p artifact
+          cp CS2RemoteConsole-server/CS2RemoteConsole-server artifact/
+
+      - name: Verify artifact contents
+        run: |
+          echo "Verifying artifact contents:"
+          ls -l artifact
+
+      - name: Upload CS2RemoteConsole-server artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: CS2RemoteConsole-server-linux-build
+          path: artifact
