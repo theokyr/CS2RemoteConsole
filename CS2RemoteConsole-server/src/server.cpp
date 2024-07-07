@@ -4,8 +4,8 @@
 #include <sstream>
 #include <algorithm>
 
-Server::Server(uint16_t port, std::atomic<bool>& running)
-    : m_port(port), m_listenSocket(INVALID_SOCKET), m_running(running)
+Server::Server(uint16_t initialPort, std::atomic<bool>& running)
+    : m_initialPort(initialPort), m_port(initialPort), m_listenSocket(INVALID_SOCKET), m_running(running)
 {
 }
 
@@ -16,23 +16,52 @@ Server::~Server()
 
 bool Server::start()
 {
-    m_listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (m_listenSocket == INVALID_SOCKET)
-    {
-        std::cerr << "Error creating socket: " << SOCKET_ERROR_CODE << std::endl;
-        return false;
-    }
+    const int MAX_PORT = 65535; // Maximum valid port number
 
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(m_port);
-
-    if (bind(m_listenSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+    while (m_port <= MAX_PORT)
     {
-        std::cerr << "Bind failed: " << SOCKET_ERROR_CODE << std::endl;
-        cleanupSockets();
-        return false;
+        std::cout << "Attempting to bind to port " << m_port << "..." << std::endl;
+
+        m_listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (m_listenSocket == INVALID_SOCKET)
+        {
+            std::cerr << "Error creating socket: " << SOCKET_ERROR_CODE << std::endl;
+            return false;
+        }
+
+        int opt = 1;
+        if (setsockopt(m_listenSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) < 0)
+        {
+            std::cerr << "setsockopt(SO_REUSEADDR) failed: " << SOCKET_ERROR_CODE << std::endl;
+            cleanupSockets();
+            return false;
+        }
+
+        sockaddr_in serverAddr{};
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = INADDR_ANY;
+        serverAddr.sin_port = htons(m_port);
+
+        if (bind(m_listenSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+        {
+            std::cerr << "Bind failed on port " << m_port << ": " << SOCKET_ERROR_CODE << std::endl;
+
+            cleanupSockets();
+
+            // Try the next port
+            m_port++;
+
+            if (m_port > MAX_PORT)
+            {
+                std::cerr << "Exhausted all available ports. Failed to start server." << std::endl;
+                return false;
+            }
+
+            continue;
+        }
+
+        // If we reach here, bind was successful
+        break;
     }
 
     if (listen(m_listenSocket, SOMAXCONN) == SOCKET_ERROR)
@@ -44,7 +73,11 @@ bool Server::start()
 
     setNonBlocking(m_listenSocket);
 
-    std::cout << "Server is listening on port " << m_port << "..." << std::endl;
+    std::cout << "Server is listening on port " << m_port << std::endl;
+    if (m_port != m_initialPort)
+    {
+        std::cout << "Note: The server is using a different port than initially specified." << std::endl;
+    }
     return true;
 }
 

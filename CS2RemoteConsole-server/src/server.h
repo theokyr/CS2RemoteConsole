@@ -10,13 +10,15 @@
 class Server
 {
 public:
-    Server(uint16_t port, std::atomic<bool>& running);
+    Server(uint16_t initialPort, std::atomic<bool>& running);
     ~Server();
 
     bool start();
     void run();
+    uint16_t getCurrentPort() const { return m_port; }
 
 private:
+    uint16_t m_initialPort;
     uint16_t m_port;
     SOCKET m_listenSocket;
     std::vector<ClientInfo> m_clients;
