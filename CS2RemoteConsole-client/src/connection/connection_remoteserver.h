@@ -33,4 +33,6 @@ struct ClientInfo
     }
 };
 
+extern ClientInfo globalClientInfo;
+
 #endif // CONNECTION_REMOTESERVER_H

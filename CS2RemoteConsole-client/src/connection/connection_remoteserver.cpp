@@ -9,6 +9,8 @@ std::atomic<bool> remoteServerConnected(false);
 std::thread remoteServerListenerThread;
 std::thread remoteServerConnectorThread;
 
+ClientInfo globalClientInfo("");
+
 bool connectToRemoteServer()
 {
     const std::string ip = Config::getInstance().get("remote_server_ip", "127.0.0.1");
@@ -73,6 +75,20 @@ void remoteServerConnectorLoop()
                     remoteServerListenerThread.join();
                 }
                 remoteServerListenerThread = std::thread(listenForRemoteServerData);
+
+                // Send player name if available
+                if (!globalClientInfo.name.empty())
+                {
+                    std::string nameMessage = "PLAYERNAME:" + globalClientInfo.name;
+                    if (sendMessageToRemoteServer(nameMessage))
+                    {
+                        spdlog::info("[RemoteServerConnection] Sent player name to remote server.");
+                    }
+                    else
+                    {
+                        spdlog::error("[RemoteServerConnection] Failed to send player name to remote server.");
+                    }
+                }
             }
             else
             {
