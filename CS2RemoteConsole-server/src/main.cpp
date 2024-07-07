@@ -2,6 +2,8 @@
 #include "utils.h"
 #include <iostream>
 #include <csignal>
+#include <cstdlib>
+#include <string>
 
 std::atomic<bool> applicationRunning(true);
 
@@ -11,10 +13,21 @@ void signalHandler(int signum)
     applicationRunning = false;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
+
+    uint16_t port = 42069; // Default port
+
+    for (int i = 1; i < argc; i++)
+    {
+        std::string arg = argv[i];
+        if ((arg == "-p" || arg == "--port") && i + 1 < argc)
+        {
+            port = static_cast<uint16_t>(std::atoi(argv[++i]));
+        }
+    }
 
 #ifdef _WIN32
     if (!initializeWinsock())
@@ -24,7 +37,7 @@ int main()
     }
 #endif
 
-    Server server(42069, applicationRunning);
+    Server server(port, applicationRunning);
     if (!server.start())
     {
         return 1;
