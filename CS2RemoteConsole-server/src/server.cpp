@@ -87,8 +87,11 @@ void Server::acceptClients()
 
             std::lock_guard<std::mutex> lock(m_clientsMutex);
             m_clients.emplace_back(clientSocket, clientIP, clientPort);
-            std::cout << "\nNew client connected: " << clientIP << ":" << clientPort
-                << " at " << getFormattedTime(m_clients.back().connectionTime) << std::endl;
+            std::cout << "\nNew client connected: "
+                << ANSI_COLOR_IP_PORT << clientIP << ":" << clientPort << ANSI_COLOR_RESET
+                << " at "
+                << ANSI_COLOR_TIMESTAMP << getFormattedTime(m_clients.back().connectionTime) << ANSI_COLOR_RESET
+                << std::endl;
 
             std::thread(&Server::handleClient, this, std::ref(m_clients.back())).detach();
         }
@@ -109,7 +112,9 @@ void Server::handleClient(ClientInfo& client)
         }
         else if (bytesReceived == 0)
         {
-            std::cout << "Client " << client.ip << ":" << client.port << " disconnected." << std::endl;
+            std::cout << "Client "
+                << ANSI_COLOR_IP_PORT << client.ip << ":" << client.port << ANSI_COLOR_RESET
+                << " disconnected." << std::endl;
             break;
         }
         else if (bytesReceived == SOCKET_ERROR)
@@ -132,24 +137,34 @@ void Server::handleClient(ClientInfo& client)
 
 void Server::handleClientMessage(ClientInfo& client, const std::string& message)
 {
-    std::istringstream iss(message);
-    std::string command;
-    std::getline(iss, command, ':');
+    size_t colonPos = message.find(':');
+    if (colonPos == std::string::npos)
+    {
+        std::cout << "Received invalid message format from client "
+            << ANSI_COLOR_IP_PORT << client.ip << ":" << client.port << ANSI_COLOR_RESET
+            << ": " << message << std::endl;
+        return;
+    }
+
+    std::string command = message.substr(0, colonPos);
+    std::string content = message.substr(colonPos + 1);
 
     if (command == "PLAYERNAME")
     {
-        std::string playerName;
-        std::getline(iss, playerName);
-        client.name = playerName;
-        std::cout << "Updated player name for client " << client.ip << ":" << client.port
-            << " to: " << playerName << std::endl;
+        client.name = content;
+        std::cout << "Updated player name for client "
+            << ANSI_COLOR_IP_PORT << client.ip << ":" << client.port << ANSI_COLOR_RESET
+            << " to: "
+            << ANSI_COLOR_USERNAME << client.name << ANSI_COLOR_RESET << std::endl;
 
         std::string broadcastMessage = "Player " + client.name + " has joined the game.";
         broadcastToClients(broadcastMessage, &client);
     }
     else
     {
-        std::cout << "Received from client " << client.ip << ":" << client.port << ": " << message << std::endl;
+        std::cout << "Received from client "
+            << ANSI_COLOR_IP_PORT << client.ip << ":" << client.port << ANSI_COLOR_RESET
+            << ": " << message << std::endl;
         // Handle other message types here
     }
 }
@@ -159,7 +174,7 @@ void Server::userInputHandler()
     std::string input;
     while (m_running)
     {
-        std::cout << "Enter command to send to clients (or '/quit' to exit): ";
+        std::cout << ANSI_COLOR_COMMON << "Enter command to send to clients (or '/quit' to exit): " << ANSI_COLOR_RESET;
         std::getline(std::cin, input);
 
         if (input == "/quit")
@@ -174,19 +189,21 @@ void Server::userInputHandler()
             int index = 0;
             for (const auto& client : m_clients)
             {
-                std::cout << "[" << index++ << "] "
-                    << (client.name.empty() ? "Unknown" : client.name)
+                std::cout << ANSI_COLOR_ID << "[" << index++ << "]" << ANSI_COLOR_RESET << " "
+                    << ANSI_COLOR_USERNAME << (client.name.empty() ? "Unknown" : client.name) << ANSI_COLOR_RESET
                     << " - "
-                    << client.ip << ":" << client.port
+                    << ANSI_COLOR_IP_PORT << client.ip << ":" << client.port << ANSI_COLOR_RESET
                     << " - "
-                    << getFormattedTime(client.connectionTime)
+                    << ANSI_COLOR_TIMESTAMP << getFormattedTime(client.connectionTime) << ANSI_COLOR_RESET
                     << "\n";
             }
         }
         else
         {
             broadcastToClients(input);
-            std::cout << "Command sent to " << m_clients.size() << " clients." << std::endl;
+            std::cout << ANSI_COLOR_COMMON << "Command sent to " << ANSI_COLOR_RESET
+                << ANSI_COLOR_ID << m_clients.size() << ANSI_COLOR_RESET
+                << ANSI_COLOR_COMMON << " clients." << ANSI_COLOR_RESET << std::endl;
         }
     }
 }

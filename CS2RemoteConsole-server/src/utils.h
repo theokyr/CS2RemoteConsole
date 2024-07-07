@@ -24,6 +24,14 @@
 #define SOCKET_ERROR_CODE errno
 #endif
 
+// ANSI color code constants
+const std::string ANSI_COLOR_COMMON = "\033[38;5;251m";
+const std::string ANSI_COLOR_ID = "\033[38;5;220m";
+const std::string ANSI_COLOR_USERNAME = "\033[38;5;39m";
+const std::string ANSI_COLOR_IP_PORT = "\033[38;5;208m";
+const std::string ANSI_COLOR_TIMESTAMP = "\033[38;5;71m";
+const std::string ANSI_COLOR_RESET = "\033[0m"; 
+
 #ifdef _WIN32
 bool initializeWinsock();
 #endif
