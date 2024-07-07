@@ -10,6 +10,8 @@
 
 struct ClientInfo
 {
+    std::string name;
+
     SOCKET socket;
     std::string ip;
     uint16_t port;

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <mutex>
 
 class Server
 {
@@ -24,8 +25,11 @@ private:
     std::atomic<bool>& m_running;
 
     void acceptClients();
+    void handleClient(ClientInfo& client);
+    void handleClientMessage(ClientInfo& client, const std::string& message);
     void userInputHandler();
-    void broadcastToClients(const std::string& message);
+    void broadcastToClients(const std::string& message, const ClientInfo* excludeClient = nullptr);
+    void removeClient(const ClientInfo& client);
     void cleanupSockets();
 };
 

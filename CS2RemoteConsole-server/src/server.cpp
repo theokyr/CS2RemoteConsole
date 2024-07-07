@@ -1,6 +1,8 @@
 ﻿#include "server.h"
 #include "utils.h"
 #include <iostream>
+#include <sstream>
+#include <algorithm>
 
 Server::Server(uint16_t port, std::atomic<bool>& running)
     : m_port(port), m_listenSocket(INVALID_SOCKET), m_running(running)
@@ -88,9 +90,67 @@ void Server::acceptClients()
             std::cout << "\nNew client connected: " << clientIP << ":" << clientPort
                 << " at " << getFormattedTime(m_clients.back().connectionTime) << std::endl;
 
-            std::thread(&handleClient, std::ref(m_clients.back()), std::ref(m_clients), std::ref(m_clientsMutex), std::ref(m_running)).detach();
+            std::thread(&Server::handleClient, this, std::ref(m_clients.back())).detach();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void Server::handleClient(ClientInfo& client)
+{
+    char buffer[1024];
+    while (m_running)
+    {
+        int bytesReceived = recv(client.socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytesReceived > 0)
+        {
+            buffer[bytesReceived] = '\0';
+            handleClientMessage(client, buffer);
+        }
+        else if (bytesReceived == 0)
+        {
+            std::cout << "Client " << client.ip << ":" << client.port << " disconnected." << std::endl;
+            break;
+        }
+        else if (bytesReceived == SOCKET_ERROR)
+        {
+#ifdef _WIN32
+            if (SOCKET_ERROR_CODE != WSAEWOULDBLOCK)
+#else
+            if (SOCKET_ERROR_CODE != EWOULDBLOCK && SOCKET_ERROR_CODE != EAGAIN)
+#endif
+            {
+                std::cerr << "recv failed for client " << client.ip << ":" << client.port << " with error: " << SOCKET_ERROR_CODE << std::endl;
+                break;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    removeClient(client);
+}
+
+void Server::handleClientMessage(ClientInfo& client, const std::string& message)
+{
+    std::istringstream iss(message);
+    std::string command;
+    std::getline(iss, command, ':');
+
+    if (command == "PLAYERNAME")
+    {
+        std::string playerName;
+        std::getline(iss, playerName);
+        client.name = playerName;
+        std::cout << "Updated player name for client " << client.ip << ":" << client.port
+            << " to: " << playerName << std::endl;
+
+        std::string broadcastMessage = "Player " + client.name + " has joined the game.";
+        broadcastToClients(broadcastMessage, &client);
+    }
+    else
+    {
+        std::cout << "Received from client " << client.ip << ":" << client.port << ": " << message << std::endl;
+        // Handle other message types here
     }
 }
 
@@ -111,10 +171,16 @@ void Server::userInputHandler()
         {
             std::lock_guard<std::mutex> lock(m_clientsMutex);
             std::cout << "Connected clients:" << std::endl;
+            int index = 0;
             for (const auto& client : m_clients)
             {
-                std::cout << "  " << client.ip << ":" << client.port
-                    << " (connected at " << getFormattedTime(client.connectionTime) << ")" << std::endl;
+                std::cout << "[" << index++ << "] "
+                    << (client.name.empty() ? "Unknown" : client.name)
+                    << " - "
+                    << client.ip << ":" << client.port
+                    << " - "
+                    << getFormattedTime(client.connectionTime)
+                    << "\n";
             }
         }
         else
@@ -125,24 +191,33 @@ void Server::userInputHandler()
     }
 }
 
-void Server::broadcastToClients(const std::string& message)
+void Server::broadcastToClients(const std::string& message, const ClientInfo* excludeClient)
 {
     std::lock_guard<std::mutex> lock(m_clientsMutex);
-    auto it = m_clients.begin();
-    while (it != m_clients.end())
+    for (auto& client : m_clients)
     {
-        int sendResult = send(it->socket, message.c_str(), static_cast<int>(message.length()), 0);
+        if (excludeClient && client.socket == excludeClient->socket)
+        {
+            continue;
+        }
+        int sendResult = send(client.socket, message.c_str(), static_cast<int>(message.length()), 0);
         if (sendResult == SOCKET_ERROR)
         {
-            std::cerr << "send failed for client " << it->ip << ":" << it->port << " with error: " << SOCKET_ERROR_CODE << std::endl;
-            shutdown(it->socket, SHUT_RDWR);
-            closesocket(it->socket);
-            it = m_clients.erase(it);
+            std::cerr << "send failed for client " << client.ip << ":" << client.port << " with error: " << SOCKET_ERROR_CODE << std::endl;
         }
-        else
-        {
-            ++it;
-        }
+    }
+}
+
+void Server::removeClient(const ClientInfo& client)
+{
+    std::lock_guard<std::mutex> lock(m_clientsMutex);
+    auto it = std::find_if(m_clients.begin(), m_clients.end(),
+                           [&client](const ClientInfo& c) { return c.socket == client.socket; });
+    if (it != m_clients.end())
+    {
+        shutdown(it->socket, SHUT_RDWR);
+        closesocket(it->socket);
+        m_clients.erase(it);
     }
 }
 
@@ -162,10 +237,6 @@ void Server::cleanupSockets()
         closesocket(m_listenSocket);
         m_listenSocket = INVALID_SOCKET;
     }
-
-#ifdef _WIN32
-    WSACleanup();
-#endif
 
     std::cout << "All sockets have been closed and cleaned up." << std::endl;
 }
