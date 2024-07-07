@@ -24,4 +24,13 @@ void listenForRemoteServerData();
 bool sendMessageToRemoteServer(const std::string& message);
 void cleanupRemoteServer();
 
+struct ClientInfo
+{
+    std::string name;
+
+    ClientInfo(const std::string& i): name(i)
+    {
+    }
+};
+
 #endif // CONNECTION_REMOTESERVER_H
