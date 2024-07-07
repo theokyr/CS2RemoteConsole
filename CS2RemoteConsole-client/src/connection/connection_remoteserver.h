@@ -21,6 +21,18 @@ extern std::thread remoteServerConnectorThread;
 bool connectToRemoteServer();
 void remoteServerConnectorLoop();
 void listenForRemoteServerData();
+bool sendMessageToRemoteServer(const std::string& message);
 void cleanupRemoteServer();
+
+struct ClientInfo
+{
+    std::string name;
+
+    ClientInfo(const std::string& i): name(i)
+    {
+    }
+};
+
+extern ClientInfo globalClientInfo;
 
 #endif // CONNECTION_REMOTESERVER_H

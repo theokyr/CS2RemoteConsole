@@ -55,6 +55,7 @@ void cs2ConsoleConnectorLoop()
                     cs2ListenerThread.join();
                 }
                 cs2ListenerThread = std::thread(listenForCS2ConsoleData);
+                vconsole.sendCmd("name"); // Get current player's in-game name
             }
             else
             {

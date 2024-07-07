@@ -1,6 +1,5 @@
 ﻿#include "connection_remoteserver.h"
 #include <iostream>
-#include <ws2tcpip.h>
 #include <chrono>
 #include <spdlog/spdlog.h>
 
@@ -9,6 +8,8 @@ std::atomic<bool> listeningRemoteServer(false);
 std::atomic<bool> remoteServerConnected(false);
 std::thread remoteServerListenerThread;
 std::thread remoteServerConnectorThread;
+
+ClientInfo globalClientInfo("");
 
 bool connectToRemoteServer()
 {
@@ -39,6 +40,24 @@ bool connectToRemoteServer()
     return true;
 }
 
+bool sendMessageToRemoteServer(const std::string& message)
+{
+    if (remoteServerSock == INVALID_SOCKET)
+    {
+        spdlog::error("[RemoteServerConnection] Cannot send message: Not connected to remote server");
+        return false;
+    }
+
+    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()), 0);
+    if (sendResult == SOCKET_ERROR)
+    {
+        spdlog::error("[RemoteServerConnection] Failed to send message to remote server: {}", WSAGetLastError());
+        return false;
+    }
+
+    return true;
+}
+
 void remoteServerConnectorLoop()
 {
     const int reconnect_delay = Config::getInstance().getInt("remote_server_reconnect_delay", 5000);
@@ -56,6 +75,20 @@ void remoteServerConnectorLoop()
                     remoteServerListenerThread.join();
                 }
                 remoteServerListenerThread = std::thread(listenForRemoteServerData);
+
+                // Send player name if available
+                if (!globalClientInfo.name.empty())
+                {
+                    std::string nameMessage = "PLAYERNAME:" + globalClientInfo.name;
+                    if (sendMessageToRemoteServer(nameMessage))
+                    {
+                        spdlog::info("[RemoteServerConnection] Sent player name to remote server.");
+                    }
+                    else
+                    {
+                        spdlog::error("[RemoteServerConnection] Failed to send player name to remote server.");
+                    }
+                }
             }
             else
             {

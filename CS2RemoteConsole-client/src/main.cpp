@@ -2,6 +2,7 @@
 #include <atomic>
 #include <thread>
 #include <csignal>
+#include <regex>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/callback_sink.h>
@@ -38,6 +39,29 @@ void gracefulShutdown()
     WSACleanup();
 
     std::cout << "CS2RemoteConsole shutdown complete. Bye-bye!..." << std::endl;
+}
+
+void handlePRNT(const PRNT& prnt)
+{
+    static const std::regex nameRegex(R"(name = (.+))");
+    std::smatch match;
+
+    if (std::regex_search(prnt.message, match, nameRegex))
+    {
+        globalClientInfo.name = match[1].str();
+        std::cout << "Player name updated: " << globalClientInfo.name << std::endl;
+
+        // Send the name to the remote server
+        std::string nameMessage = "PLAYERNAME:" + globalClientInfo.name;
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Sent player name to remote server." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to send player name to remote server." << std::endl;
+        }
+    }
 }
 
 int main()
@@ -80,6 +104,10 @@ int main()
         vconsole.setOnPRNTReceived([&](const PRNT& PRNT)
         {
             tui.addConsoleMessage(PRNT.channelID, PRNT.message, PRNT.color);
+            if (globalClientInfo.name.empty())
+            {
+                handlePRNT(PRNT);
+            }
         });
 
         spdlog::info("[Main] Starting {}", application_name);

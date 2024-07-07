@@ -44,9 +44,6 @@
     <ClInclude Include="src\connection_remoteserver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\logging.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\payloads.h">
       <Filter>Header Files</Filter>
     </ClInclude>
