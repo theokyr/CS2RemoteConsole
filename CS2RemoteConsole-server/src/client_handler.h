@@ -11,7 +11,8 @@
 struct ClientInfo
 {
     std::string name;
-
+    std::string gameServerIp;
+    uint16_t pingToGameServer;
     SOCKET socket;
     std::string ip;
     uint16_t port;

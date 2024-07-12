@@ -27,6 +27,8 @@ void cleanupRemoteServer();
 struct ClientInfo
 {
     std::string name;
+    std::string gameServerIp;
+    uint16_t gamePing;
 
     ClientInfo(const std::string& i): name(i)
     {

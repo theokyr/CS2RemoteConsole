@@ -43,16 +43,59 @@ void gracefulShutdown()
 
 void handlePRNT(const PRNT& prnt)
 {
-    static const std::regex nameRegex(R"(name = (.+))");
-    std::smatch match;
 
-    if (std::regex_search(prnt.message, match, nameRegex))
+    static const std::regex nameRegex(R"(^[\ ]*name = (.+))");
+    static const std::regex rttRegex(R"(^ *Network latency.*RTT=([0-9]+)ms)"); //
+
+    static const std::regex ipRegex(R"(^ *CL:[\ ]*Connected to '([0-9\.:]+)')");
+
+    std::smatch nameMatch;
+    std::smatch rttMatch;
+    std::smatch connectMatch;
+
+
+
+    if (std::regex_search(prnt.message, nameMatch, nameRegex))
     {
-        globalClientInfo.name = match[1].str();
+        globalClientInfo.name = nameMatch[1].str();
         std::cout << "Player name updated: " << globalClientInfo.name << std::endl;
 
         // Send the name to the remote server
         std::string nameMessage = "PLAYERNAME:" + globalClientInfo.name;
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Sent player name to remote server." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to send player name to remote server." << std::endl;
+        }
+    }
+    if (std::regex_search(prnt.message, rttMatch, rttRegex))
+    {
+        globalClientInfo.gamePing = uint16_t(std::stoi(rttMatch[1].str()));
+
+        spdlog::info("Game ping updated: {}", rttMatch[1].str() + "ms");
+
+        // Send the name to the remote server
+        std::string nameMessage = "GAMEPING:" + std::to_string(globalClientInfo.gamePing);
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Sent player name to remote server." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to send player name to remote server." << std::endl;
+        }
+    }
+    if (std::regex_search(prnt.message, connectMatch, ipRegex))
+    {
+        globalClientInfo.gameServerIp = connectMatch[1].str();
+
+        spdlog::info("Game server ip updated: {}", connectMatch[1].str());
+
+        // Send the name to the remote server
+        std::string nameMessage = "GAMEIP:" + globalClientInfo.gameServerIp;
         if (sendMessageToRemoteServer(nameMessage))
         {
             std::cout << "Sent player name to remote server." << std::endl;
@@ -104,10 +147,7 @@ int main()
         vconsole.setOnPRNTReceived([&](const PRNT& PRNT)
         {
             tui.addConsoleMessage(PRNT.channelID, PRNT.message, PRNT.color);
-            if (globalClientInfo.name.empty())
-            {
-                handlePRNT(PRNT);
-            }
+            handlePRNT(PRNT);
         });
 
         spdlog::info("[Main] Starting {}", application_name);
