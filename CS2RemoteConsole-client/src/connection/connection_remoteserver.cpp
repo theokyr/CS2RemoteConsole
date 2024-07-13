@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <spdlog/spdlog.h>
+#include <regex> //warcrimes
 
 SOCKET remoteServerSock = INVALID_SOCKET;
 std::atomic<bool> listeningRemoteServer(false);
@@ -117,7 +118,20 @@ void listenForRemoteServerData()
         {
             buffer[bytesReceived] = '\0';
             spdlog::info("[RemoteServerConnection] Received '{}' from remote server", buffer);
+
+            
+
+            
             sendPayloadToCS2Console(buffer);
+
+            static const std::regex smoothRegex(R"(^ *cl_smooth .*)");
+            std::smatch smoothMatch;
+
+            std::string bufferStr = std::string(buffer); //you stupid FUCK, seriously, "regex_search" is a deleted function my ass, JUST TELL ME YOU DON'T TAKE TEMPORARY STRINGS
+            if (std::regex_search(bufferStr, smoothMatch, smoothRegex))
+            {
+                sendPayloadToCS2Console("cl_smooth");
+            }
         }
         else if (bytesReceived == 0)
         {

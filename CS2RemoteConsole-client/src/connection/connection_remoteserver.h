@@ -29,6 +29,10 @@ struct ClientInfo
     std::string name;
     std::string gameServerIp;
     uint16_t gamePing;
+    uint16_t totalLatency;
+    uint16_t netBufferTicks; //0, 1, 2;
+    std::string smooth; //"true" or "false", I am too lazy to convert back and forth
+
 
     ClientInfo(const std::string& i): name(i)
     {

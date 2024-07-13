@@ -41,16 +41,36 @@ void gracefulShutdown()
     std::cout << "CS2RemoteConsole shutdown complete. Bye-bye!..." << std::endl;
 }
 
-void handlePRNT(const PRNT& prnt)
+void requestTicktiming(VConsole& vconsole)
+{
+    //used for logging purposes
+    spdlog::info("IN THE THREAD 1");
+    Sleep(5000);
+    vconsole.sendCmd("cl_ticktiming print");
+    vconsole.sendCmd("cl_smooth");
+    //vconsole.sendCmd("cl_ticktiming print");
+    spdlog::info("IN THE THREAD 2");
+}
+
+
+
+void handlePRNT(const PRNT& prnt, VConsole& vconsole)
 {
 
     static const std::regex nameRegex(R"(^[\ ]*name = (.+))");
-    static const std::regex rttRegex(R"(^ *Network latency.*RTT=([0-9]+)ms)"); //
+    static const std::regex rttRegex(R"(^ *Network latency.*RTT=([0-9]+)ms)");
+    static const std::regex totalLatencyRegex(R"(^ *cl_ticktiming.*TOTAL: ([0-9]+))"); //
+    static const std::regex netBufferRegex(R"(^ *cl_net_buffer_ticks = ([0-9]+))"); //
+    static const std::regex smoothRegex(R"(^ *cl_smooth = (.+))"); //
 
     static const std::regex ipRegex(R"(^ *CL:[\ ]*Connected to '([0-9\.:]+)')");
 
     std::smatch nameMatch;
     std::smatch rttMatch;
+    std::smatch totalLatencyMatch;
+    std::smatch netBufferMatch;
+    std::smatch smoothMatch;
+
     std::smatch connectMatch;
 
 
@@ -88,8 +108,63 @@ void handlePRNT(const PRNT& prnt)
             std::cerr << "Failed to send player name to remote server." << std::endl;
         }
     }
+    if (std::regex_search(prnt.message, totalLatencyMatch, totalLatencyRegex))
+    {
+        globalClientInfo.totalLatency = uint16_t(std::stoi(totalLatencyMatch[1].str()));
+
+        spdlog::info("total Latency updated: {}", totalLatencyMatch[1].str() + "ms");
+
+        // Send the name to the remote server
+        std::string nameMessage = "TOTALLATENCY:" + std::to_string(globalClientInfo.totalLatency);
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Success!" << std::endl;
+        }
+        else
+        {
+            std::cerr << "Fail!" << std::endl;
+        }
+    }
+    if (std::regex_search(prnt.message, netBufferMatch, netBufferRegex))
+    {
+        globalClientInfo.netBufferTicks = uint16_t(std::stoi(netBufferMatch[1].str()));
+
+        spdlog::info("net buffer setting updated: {}", netBufferMatch[1].str());
+
+        // Send the name to the remote server
+        std::string nameMessage = "NETBUFFER:" + std::to_string(globalClientInfo.netBufferTicks);
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Sent player name to remote server." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to send player name to remote server." << std::endl;
+        }
+    }
+    if (std::regex_search(prnt.message, smoothMatch, smoothRegex))
+    {
+        globalClientInfo.smooth = smoothMatch[1].str();
+
+        spdlog::info("smooth updating: {}", smoothMatch[1].str());
+
+        // Send the name to the remote server
+        std::string nameMessage = "SMOOTH:" + globalClientInfo.smooth;
+        if (sendMessageToRemoteServer(nameMessage))
+        {
+            std::cout << "Sent player name to remote server." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to send player name to remote server." << std::endl;
+        }
+    }
+
     if (std::regex_search(prnt.message, connectMatch, ipRegex))
     {
+        std::thread dataRequester(requestTicktiming, std::ref(vconsole));
+        dataRequester.detach();
+
         globalClientInfo.gameServerIp = connectMatch[1].str();
 
         spdlog::info("Game server ip updated: {}", connectMatch[1].str());
@@ -106,6 +181,8 @@ void handlePRNT(const PRNT& prnt)
         }
     }
 }
+
+
 
 int main()
 {
@@ -147,7 +224,7 @@ int main()
         vconsole.setOnPRNTReceived([&](const PRNT& PRNT)
         {
             tui.addConsoleMessage(PRNT.channelID, PRNT.message, PRNT.color);
-            handlePRNT(PRNT);
+            handlePRNT(PRNT, vconsole);
         });
 
         spdlog::info("[Main] Starting {}", application_name);
