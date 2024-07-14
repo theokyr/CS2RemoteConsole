@@ -50,6 +50,7 @@ void VConsole::disconnect()
 
 bool VConsole::sendCmd(const std::string& cmd)
 {
+    //std::lock_guard<std::mutex> guard(cmdMutex);
     std::vector<unsigned char> payload = createCommandPayload(cmd);
     int result = send(clientSocket, reinterpret_cast<const char*>(payload.data()), static_cast<int>(payload.size()), 0);
     return result != SOCKET_ERROR;

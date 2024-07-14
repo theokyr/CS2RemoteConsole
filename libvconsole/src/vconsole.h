@@ -1,12 +1,14 @@
 ﻿#ifndef VCONSOLE_H
 #define VCONSOLE_H
-
 #include <string>
 #include <vector>
 #include <functional>
 #include <algorithm>
 #include <iterator>
+#include <mutex>
 #include "messages.h"
+
+
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -75,6 +77,7 @@ public:
     }
 
 private:
+    //std::mutex cmdMutex;
     SOCKET clientSocket;
 
     std::function<void(const PRNT&)> onPRNTReceived;

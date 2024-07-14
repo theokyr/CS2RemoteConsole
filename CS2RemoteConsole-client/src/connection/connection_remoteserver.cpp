@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <spdlog/spdlog.h>
+#include <regex> //warcrimes
 
 SOCKET remoteServerSock = INVALID_SOCKET;
 std::atomic<bool> listeningRemoteServer(false);
@@ -46,9 +47,8 @@ bool sendMessageToRemoteServer(const std::string& message)
     {
         spdlog::error("[RemoteServerConnection] Cannot send message: Not connected to remote server");
         return false;
-    }
-
-    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()), 0);
+    } 
+    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()) + 1, 0); //that +1 is once again a warcrime
     if (sendResult == SOCKET_ERROR)
     {
         spdlog::error("[RemoteServerConnection] Failed to send message to remote server: {}", WSAGetLastError());
@@ -117,7 +117,20 @@ void listenForRemoteServerData()
         {
             buffer[bytesReceived] = '\0';
             spdlog::info("[RemoteServerConnection] Received '{}' from remote server", buffer);
+
+            
+
+            
             sendPayloadToCS2Console(buffer);
+
+            static const std::regex smoothRegex(R"(^ *cl_smooth .*)");
+            std::smatch smoothMatch;
+
+            std::string bufferStr = std::string(buffer); //you stupid FUCK, seriously, "regex_search" is a deleted function my ass, JUST TELL ME YOU DON'T TAKE TEMPORARY STRINGS
+            if (std::regex_search(bufferStr, smoothMatch, smoothRegex))
+            {
+                sendPayloadToCS2Console("cl_smooth");
+            }
         }
         else if (bytesReceived == 0)
         {
