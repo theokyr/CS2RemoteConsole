@@ -47,9 +47,8 @@ bool sendMessageToRemoteServer(const std::string& message)
     {
         spdlog::error("[RemoteServerConnection] Cannot send message: Not connected to remote server");
         return false;
-    }
-
-    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()), 0);
+    } 
+    int sendResult = send(remoteServerSock, message.c_str(), static_cast<int>(message.length()) + 1, 0); //that +1 is once again a warcrime
     if (sendResult == SOCKET_ERROR)
     {
         spdlog::error("[RemoteServerConnection] Failed to send message to remote server: {}", WSAGetLastError());

@@ -45,11 +45,10 @@ void requestTicktiming(VConsole& vconsole)
 {
     //used for logging purposes
     spdlog::info("IN THE THREAD 1");
-    Sleep(5000);
+    Sleep(20000);
     vconsole.sendCmd("cl_ticktiming print");
     vconsole.sendCmd("cl_smooth");
-    //vconsole.sendCmd("cl_ticktiming print");
-    spdlog::info("IN THE THREAD 2");
+    vconsole.sendCmd("cl_net_buffer_size");
 }
 
 
@@ -59,7 +58,7 @@ void handlePRNT(const PRNT& prnt, VConsole& vconsole)
 
     static const std::regex nameRegex(R"(^[\ ]*name = (.+))");
     static const std::regex rttRegex(R"(^ *Network latency.*RTT=([0-9]+)ms)");
-    static const std::regex totalLatencyRegex(R"(^ *cl_ticktiming.*TOTAL: ([0-9]+))"); //
+    static const std::regex totalLatencyRegex(R"(^ *cl_ticktiming.*TOTAL: *([0-9]+))"); //
     static const std::regex netBufferRegex(R"(^ *cl_net_buffer_ticks = ([0-9]+))"); //
     static const std::regex smoothRegex(R"(^ *cl_smooth = (.+))"); //
 

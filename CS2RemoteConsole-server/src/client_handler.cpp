@@ -11,7 +11,8 @@ void handleClient(ClientInfo& client, std::vector<ClientInfo>& clients, std::mut
         int bytesReceived = recv(client.socket, buffer, sizeof(buffer) - 1, 0);
         if (bytesReceived > 0)
         {
-            buffer[bytesReceived] = '\0';
+            
+
             std::cout << "Received from client " << client.ip << ":" << client.port << ": " << buffer << std::endl;
         }
         else if (bytesReceived == 0)

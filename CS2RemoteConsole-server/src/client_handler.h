@@ -11,8 +11,12 @@
 struct ClientInfo
 {
     std::string name;
-    std::string gameServerIp;
-    uint16_t pingToGameServer;
+    std::string gameServerIp = "NOT CONNECTED";
+    uint16_t pingToGameServer = 0;
+    uint16_t totalLatency = 0;
+    uint16_t netBufferTicks = 0; //0, 1, 2;
+    std::string smooth = "true"; //"true" or "false", I am too lazy to convert back and forth
+
     SOCKET socket;
     std::string ip;
     uint16_t port;
