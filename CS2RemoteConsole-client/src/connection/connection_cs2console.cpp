@@ -148,6 +148,9 @@ void cleanupCS2Console()
     listeningCS2 = false;
     cs2ConsoleConnected = false;
 
+    // Disconnect first to interrupt any blocking connect() calls
+    vconsole.disconnect();
+
     if (cs2ListenerThread.joinable())
     {
         cs2ListenerThread.join();
@@ -156,8 +159,6 @@ void cleanupCS2Console()
     {
         cs2ConnectorThread.join();
     }
-
-    vconsole.disconnect();
 }
 
 void initializeCS2Connection()

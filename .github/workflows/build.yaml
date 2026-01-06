@@ -1,0 +1,137 @@
+name: Build CS2RemoteConsole
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'libvconsole/**'
+      - 'CS2RemoteConsole-client/**'
+      - 'CS2RemoteConsole-server/**'
+      - 'common/**'
+      - 'CMakeLists.txt'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'libvconsole/**'
+      - 'CS2RemoteConsole-client/**'
+      - 'CS2RemoteConsole-server/**'
+      - 'common/**'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_name: linux
+          - os: windows-latest
+            os_name: windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Linux setup
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses-dev
+
+      # Windows setup
+      - name: Add MSBuild to PATH (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up Visual Studio shell (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      # Build - Linux (CMake)
+      - name: Configure CMake (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd build
+          make -j$(nproc)
+
+      # Build - Windows (MSBuild)
+      - name: Build libvconsole (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd libvconsole
+          msbuild libvconsole.vcxproj /p:Configuration=Release /p:Platform=x64
+
+      - name: Prepare libvconsole for client (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          if not exist "CS2RemoteConsole-client\lib" mkdir "CS2RemoteConsole-client\lib"
+          copy "libvconsole\x64\Release\libvconsole.lib" "CS2RemoteConsole-client\lib\"
+        shell: cmd
+
+      - name: Build CS2RemoteConsole-client (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd CS2RemoteConsole-client
+          msbuild CS2RemoteConsole-client.vcxproj /p:Configuration=Release /p:Platform=x64
+
+      - name: Build CS2RemoteConsole-server (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd CS2RemoteConsole-server
+          msbuild CS2RemoteConsole-server.vcxproj /p:Configuration=Release /p:Platform=x64
+
+      # Prepare artifacts - Linux
+      - name: Prepare client artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p artifact-client
+          cp build/bin/CS2RemoteConsole-client artifact-client/
+          cp CS2RemoteConsole-client/config.ini artifact-client/
+
+      - name: Prepare server artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p artifact-server
+          cp build/bin/CS2RemoteConsole-server artifact-server/
+
+      # Prepare artifacts - Windows
+      - name: Prepare client artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir artifact-client
+          copy "CS2RemoteConsole-client\x64\Release\CS2RemoteConsole-client.exe" "artifact-client\"
+          copy "CS2RemoteConsole-client\config.ini" "artifact-client\"
+        shell: cmd
+
+      - name: Prepare server artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir artifact-server
+          copy "CS2RemoteConsole-server\x64\Release\CS2RemoteConsole-server.exe" "artifact-server\"
+        shell: cmd
+
+      # Upload artifacts
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CS2RemoteConsole-client-${{ matrix.os_name }}
+          path: artifact-client
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CS2RemoteConsole-server-${{ matrix.os_name }}
+          path: artifact-server

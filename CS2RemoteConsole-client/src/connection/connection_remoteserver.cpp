@@ -148,17 +148,20 @@ void cleanupRemoteServer()
 {
     listeningRemoteServer = false;
     remoteServerConnected = false;
+
+    // Close socket first to interrupt any blocking connect() calls
+    if (remoteServerSock != INVALID_SOCKET)
+    {
+        CLOSE_SOCKET(remoteServerSock);
+        remoteServerSock = INVALID_SOCKET;
+    }
+
     if (remoteServerListenerThread.joinable())
     {
         remoteServerListenerThread.join();
     }
     if (remoteServerConnectorThread.joinable())
     {
-        remoteServerConnectorThread.detach();
-    }
-    if (remoteServerSock != INVALID_SOCKET)
-    {
-        CLOSE_SOCKET(remoteServerSock);
-        remoteServerSock = INVALID_SOCKET;
+        remoteServerConnectorThread.join();
     }
 }

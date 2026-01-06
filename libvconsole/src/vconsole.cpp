@@ -39,6 +39,7 @@ void VConsole::disconnect()
 {
     if (clientSocket != INVALID_SOCKET)
     {
+        shutdown(clientSocket, SHUT_RDWR);  // Force pending recv/send to return
         closesocket(clientSocket);
         clientSocket = INVALID_SOCKET;
     }
