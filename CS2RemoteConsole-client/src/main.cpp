@@ -112,7 +112,11 @@ int main()
         spdlog::info("[Main] Starting {}", application_name);
 
         cs2ConnectorThread = std::thread(cs2ConsoleConnectorLoop);
-        remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
+
+        if (Config::getInstance().getInt("remote_server_enabled", 0) == 1)
+        {
+            remoteServerConnectorThread = std::thread(remoteServerConnectorLoop);
+        }
 
         tui.run();
 
