@@ -1,33 +1,40 @@
-name: Build CS2RemoteConsole-server (Linux)
+name: Build CS2RemoteConsole-client (Linux)
 
 on:
   push:
     branches: [ master ]
     paths:
-      - 'CS2RemoteConsole-server/**'
+      - 'libvconsole/**'
+      - 'CS2RemoteConsole-client/**'
       - 'common/**'
       - 'CMakeLists.txt'
   pull_request:
     branches: [ master ]
     paths:
-      - 'CS2RemoteConsole-server/**'
+      - 'libvconsole/**'
+      - 'CS2RemoteConsole-client/**'
       - 'common/**'
       - 'CMakeLists.txt'
   workflow_dispatch:
 
 jobs:
-  build-cs2remoteconsole-server-linux:
+  build-cs2remoteconsole-client-linux:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses-dev
+
       - name: Configure CMake
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_CLIENT=OFF
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVER=OFF
 
       - name: Build
         run: |
@@ -37,15 +44,16 @@ jobs:
       - name: Prepare artifact directory
         run: |
           mkdir -p artifact
-          cp build/bin/CS2RemoteConsole-server artifact/
+          cp build/bin/CS2RemoteConsole-client artifact/
+          cp CS2RemoteConsole-client/config.ini artifact/
 
       - name: Verify artifact contents
         run: |
           echo "Verifying artifact contents:"
           ls -l artifact
 
-      - name: Upload CS2RemoteConsole-server artifact
+      - name: Upload CS2RemoteConsole-client artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CS2RemoteConsole-server-linux-build
+          name: CS2RemoteConsole-client-linux-build
           path: artifact

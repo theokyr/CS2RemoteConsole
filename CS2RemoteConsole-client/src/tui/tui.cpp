@@ -1,9 +1,14 @@
-﻿#include "tui.h"
+#include "tui.h"
 #include <algorithm>
 #include <chrono>
 #include <thread>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/callback_sink.h>
+
+// PDCurses uses nc_getmouse, ncurses uses getmouse
+#ifndef _WIN32
+#define nc_getmouse getmouse
+#endif
 
 template <typename T>
 T clamp(const T& value, const T& low, const T& high)
@@ -11,9 +16,9 @@ T clamp(const T& value, const T& low, const T& high)
     return std::max(low, std::min(value, high));
 }
 
-TUI::TUI()
+TUI::TUI(std::atomic<bool>& runningFlag)
     : m_consoleWindow(nullptr), m_inputWindow(nullptr),
-      m_running(true), m_needsResize(false), m_lastWidth(0), m_lastHeight(0),
+      m_running(runningFlag), m_needsResize(false), m_lastWidth(0), m_lastHeight(0),
       m_scrollPosition(0), m_consoleDirty(false)
 {
 }
@@ -80,11 +85,11 @@ void TUI::setCommandCallback(std::function<void(const std::string&)> callback)
 }
 
 void TUI::addConsoleMessage(int channelId, const std::string& message, uint32_t msgColor) //no background color required, this is only for PRNT as of now, which doesn't deliver background colors anyways
-{ 
+{
     std::lock_guard<std::mutex> lock(m_consoleMutex);
     ConsoleMessage cMessage;
     cMessage.channelId = channelId;
-    cMessage.color = _byteswap_ulong(msgColor); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
+    cMessage.color = byteSwap32(msgColor); //byteswapping because apparently message colors have their bytes swapped relative to channel colors...Valve...
     cMessage.message = message;
 
     cMessage.timestamp = std::chrono::system_clock::now();

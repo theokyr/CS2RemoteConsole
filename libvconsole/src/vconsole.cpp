@@ -1,10 +1,10 @@
-﻿#include "vconsole.h"
+#include "vconsole.h"
 #include <iostream>
 #include <cstring>
 
 VConsole::VConsole() : clientSocket(INVALID_SOCKET)
 {
-    setupWinsock();
+    platformSocketInit();
 }
 
 VConsole::~VConsole()
@@ -61,7 +61,7 @@ int VConsole::readChunk(std::vector<char>& outputBuf)
     int n = recv(clientSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
     if (n < static_cast<int>(sizeof(VConChunk)))
     {
-        if (WSAGetLastError() == WSAEWOULDBLOCK)
+        if (SOCKET_ERROR_CODE == WOULD_BLOCK_ERROR)
         {
             return 0;
         }
@@ -78,7 +78,7 @@ int VConsole::readChunk(std::vector<char>& outputBuf)
     int p = recv(clientSocket, outputBuf.data() + sizeof(VConChunk), header.length - sizeof(VConChunk), 0);
     if (p < static_cast<int>(header.length - sizeof(VConChunk)))
     {
-        if (WSAGetLastError() == WSAEWOULDBLOCK)
+        if (SOCKET_ERROR_CODE == WOULD_BLOCK_ERROR)
         {
             return 0;
         }
@@ -176,15 +176,7 @@ void VConsole::setOnCHANReceived(std::function<void(const CHAN&)> callback)
     onCHANReceived = callback;
 }
 
-bool setupWinsock()
-{
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    {
-        return false;
-    }
-    return true;
-}
+// Platform socket initialization is now handled by platformSocketInit() in platform.h
 
 std::vector<unsigned char> createCommandPayload(const std::string& command)
 {

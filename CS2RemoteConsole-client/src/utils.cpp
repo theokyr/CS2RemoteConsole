@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "config.h"
 #include "utils.h"
 #include "connection/connection_cs2console.h"
@@ -7,19 +7,22 @@
 std::string getCurrentDirectory()
 {
     char buffer[FILENAME_MAX];
+#ifdef _WIN32
     if (_getcwd(buffer, FILENAME_MAX) != nullptr)
+#else
+    if (getcwd(buffer, FILENAME_MAX) != nullptr)
+#endif
     {
         return std::string(buffer);
     }
     return "";
 }
 
-bool setupApplicationWinsock()
+bool setupApplicationSockets()
 {
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    if (!platformSocketInit())
     {
-        std::cerr << "[Main] WSAStartup failed" << '\n';
+        std::cerr << "[Main] Socket initialization failed" << '\n';
         return false;
     }
     return true;

@@ -1,26 +1,28 @@
-﻿name: Build CS2RemoteConsole-server
+name: Build CS2RemoteConsole-server (Windows)
 
 on:
   push:
     branches: [ master ]
     paths:
       - 'CS2RemoteConsole-server/**'
+      - 'common/**'
   pull_request:
     branches: [ master ]
     paths:
       - 'CS2RemoteConsole-server/**'
+      - 'common/**'
   workflow_dispatch:
 
 jobs:
   build-cs2remoteconsole-server:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
@@ -45,7 +47,7 @@ jobs:
         shell: cmd
 
       - name: Upload CS2RemoteConsole-server artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: CS2RemoteConsole-server-build
+          name: CS2RemoteConsole-server-windows-build
           path: artifact

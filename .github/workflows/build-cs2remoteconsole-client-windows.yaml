@@ -1,4 +1,4 @@
-﻿name: Build libvconsole and CS2RemoteConsole-client
+name: Build CS2RemoteConsole-client (Windows)
 
 on:
   push:
@@ -6,23 +6,25 @@ on:
     paths:
       - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
+      - 'common/**'
   pull_request:
     branches: [ master ]
     paths:
       - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
+      - 'common/**'
   workflow_dispatch:
 
 jobs:
   build-libvconsole:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
@@ -35,24 +37,21 @@ jobs:
           msbuild libvconsole.vcxproj /p:Configuration=Release /p:Platform=x64
 
       - name: Upload libvconsole artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: libvconsole-build
-          path: |
-            libvconsole/x64/Release/libvconsole.lib
-            libvconsole/src/messages.h
-            libvconsole/src/vconsole.h
+          path: libvconsole/x64/Release/libvconsole.lib
 
   build-cs2remoteconsole-client:
     needs: build-libvconsole
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
@@ -60,7 +59,7 @@ jobs:
           arch: x64
 
       - name: Download libvconsole artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: libvconsole-build
           path: libvconsole-build
@@ -74,18 +73,13 @@ jobs:
       - name: Prepare libvconsole for CS2RemoteConsole-client
         run: |
           if not exist "CS2RemoteConsole-client\lib" mkdir "CS2RemoteConsole-client\lib"
-          if not exist "CS2RemoteConsole-client\include" mkdir "CS2RemoteConsole-client\include"
-          copy "libvconsole-build\x64\Release\libvconsole.lib" "CS2RemoteConsole-client\lib\"
-          copy "libvconsole-build\src\messages.h" "CS2RemoteConsole-client\include\"
-          copy "libvconsole-build\src\vconsole.h" "CS2RemoteConsole-client\include\"
+          copy "libvconsole-build\libvconsole.lib" "CS2RemoteConsole-client\lib\"
         shell: cmd
 
       - name: Verify copied files
         run: |
           echo "Verifying lib file:"
           dir "CS2RemoteConsole-client\lib"
-          echo "Verifying header files:"
-          dir "CS2RemoteConsole-client\include"
         shell: cmd
 
       - name: Build CS2RemoteConsole-client
@@ -107,7 +101,7 @@ jobs:
         shell: cmd
 
       - name: Upload CS2RemoteConsole-client artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: CS2RemoteConsole-client-build
+          name: CS2RemoteConsole-client-windows-build
           path: artifact

@@ -14,15 +14,16 @@
 #include "connection/connection_cs2console.h"
 #include "connection/connection_remoteserver.h"
 #include "tui/tui.h"
-#include <windows.h>
+#include "../../common/platform.h"
 
 std::atomic<bool> applicationRunning(true);
-TUI tui;
+TUI tui(applicationRunning);
 
 void signalHandler(int signum)
 {
     spdlog::info("[Main] Interrupt signal {} received.", signum);
     applicationRunning = false;
+    running = false;  // Stop connection loops
 }
 
 void gracefulShutdown()
@@ -31,12 +32,10 @@ void gracefulShutdown()
 
     applicationRunning = false;
 
-    tui.shutdown();
-
     cleanupCS2Console();
     cleanupRemoteServer();
 
-    WSACleanup();
+    platformSocketCleanup();
 
     std::cout << "CS2RemoteConsole shutdown complete. Bye-bye!..." << std::endl;
 }
@@ -76,7 +75,7 @@ int main()
         auto applicationLogger = std::make_shared<spdlog::logger>("CS2RemoteConsole-Client", begin(applicationSinks), end(applicationSinks));
         spdlog::set_default_logger(applicationLogger);
 
-        if (!setupConfig() || !setupApplicationWinsock())
+        if (!setupConfig() || !setupApplicationSockets())
         {
             return 1;
         }
@@ -124,7 +123,7 @@ int main()
         spdlog::error("[Main] Unhandled exception: {}", e.what());
         cleanupCS2Console();
         cleanupRemoteServer();
-        WSACleanup();
+        platformSocketCleanup();
         return 1;
     }
     catch (...)
@@ -132,7 +131,7 @@ int main()
         spdlog::error("[Main] Unhandled unknown exception.");
         cleanupCS2Console();
         cleanupRemoteServer();
-        WSACleanup();
+        platformSocketCleanup();
         return 1;
     }
     return 0;

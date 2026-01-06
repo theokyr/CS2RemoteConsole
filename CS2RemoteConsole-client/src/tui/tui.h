@@ -1,10 +1,12 @@
-﻿#ifndef TUI_H
+#ifndef TUI_H
 #define TUI_H
 
+#ifdef _WIN32
 #pragma comment(lib, "pdcurses.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "advapi32.lib")
+#endif
 
 #include <atomic>
 #include <chrono>
@@ -15,8 +17,14 @@
 #include <string>
 #include <unordered_map>
 
-#include <curses.h>
+#ifdef _WIN32
+#include <pdcurses/curses.h>
+#else
+#include <ncurses.h>
+#endif
 #include <spdlog/spdlog.h>
+
+#include "../../../common/platform.h"
 
 const int APPLICATION_SPECIAL_CHANNEL_ID = -1337;
 
@@ -38,7 +46,7 @@ struct ConsoleMessage
 class TUI
 {
 public:
-    TUI();
+    explicit TUI(std::atomic<bool>& runningFlag);
     ~TUI();
 
     void init();
@@ -70,7 +78,7 @@ private:
     std::function<void(const std::string&)> m_commandCallback;
     std::mutex m_consoleMutex;
     std::mutex m_channelsMutex;
-    std::atomic<bool> m_running;
+    std::atomic<bool>& m_running;  // Reference to external running flag
     std::atomic<bool> m_needsResize;
     int m_lastWidth;
     int m_lastHeight;

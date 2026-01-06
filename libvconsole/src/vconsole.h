@@ -7,15 +7,7 @@
 #include <algorithm>
 #include <iterator>
 #include "messages.h"
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-#else
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#endif
+#include "../../common/platform.h"
 
 #pragma once
 
@@ -68,7 +60,7 @@ public:
         // Perform a non-blocking check on the socket
         char buf;
         int result = recv(clientSocket, &buf, 1, MSG_PEEK);
-        if (result == 0 || (result == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK))
+        if (result == 0 || (result == SOCKET_ERROR && SOCKET_ERROR_CODE != WOULD_BLOCK_ERROR))
             return false;
 
         return true;
@@ -97,7 +89,6 @@ private:
     CFGV parseCFGV(const std::vector<char>& chunkBuf);
 };
 
-bool setupWinsock();
 std::vector<unsigned char> createCommandPayload(const std::string& command);
 
 #endif // VCONSOLE_H
