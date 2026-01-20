@@ -48,14 +48,14 @@
     <PropertyGroup Label="UserMacros"/>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <LinkIncremental>true</LinkIncremental>
-        <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)/libvconsole/src/</IncludePath>
+        <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)..\libvconsole\src\</IncludePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <LinkIncremental>false</LinkIncremental>
     </PropertyGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <ClCompile>
-            <AdditionalIncludeDirectories>.\include</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>.\include;$(ProjectDir)..\common;$(ProjectDir)..\libvconsole\src</AdditionalIncludeDirectories>
             <PrecompiledHeader>NotUsing</PrecompiledHeader>
             <WarningLevel>Level3</WarningLevel>
             <Optimization>Disabled</Optimization>
@@ -66,14 +66,14 @@
         </ClCompile>
         <Link>
             <AdditionalLibraryDirectories>./lib;</AdditionalLibraryDirectories>
-            <AdditionalDependencies>$(SolutionDir)/x64/Debug/libvconsole.lib</AdditionalDependencies>
+            <AdditionalDependencies>.\lib\libvconsole.lib;.\lib\pdcurses.lib</AdditionalDependencies>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <ClCompile>
-            <AdditionalIncludeDirectories>.\include</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>.\include;$(ProjectDir)..\common;$(ProjectDir)..\libvconsole\src</AdditionalIncludeDirectories>
             <PrecompiledHeader>NotUsing</PrecompiledHeader>
             <WarningLevel>Level3</WarningLevel>
             <Optimization>MaxSpeed</Optimization>

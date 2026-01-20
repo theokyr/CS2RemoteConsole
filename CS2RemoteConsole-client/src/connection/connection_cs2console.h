@@ -1,4 +1,4 @@
-﻿#ifndef CONNECTION_CS2CONSOLE_H
+#ifndef CONNECTION_CS2CONSOLE_H
 #define CONNECTION_CS2CONSOLE_H
 
 #include <atomic>
@@ -7,7 +7,9 @@
 #include "vconsole.h"
 #include "../singletons.h"
 
+#ifdef _WIN32
 #pragma comment(lib, "libvconsole.lib")
+#endif
 
 #pragma once
 

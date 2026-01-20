@@ -4,6 +4,12 @@
 #include <csignal>
 #include <cstdlib>
 #include <string>
+#include <cstdio>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 std::atomic<bool> applicationRunning(true);
 
@@ -11,6 +17,11 @@ void signalHandler(int signum)
 {
     std::cout << "\nInterrupt signal (" << signum << ") received. Initiating shutdown..." << std::endl;
     applicationRunning = false;
+#ifdef _WIN32
+    _close(_fileno(stdin));  // Force getline to return
+#else
+    close(STDIN_FILENO);  // Force getline to return
+#endif
 }
 
 int main(int argc, char* argv[])

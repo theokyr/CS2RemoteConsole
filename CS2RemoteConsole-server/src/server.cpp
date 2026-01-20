@@ -87,6 +87,10 @@ void Server::run()
     userInputHandler();
 
     std::cout << "Shutting down server..." << std::endl;
+
+    // Close sockets first to interrupt any blocking accept()
+    cleanupSockets();
+
     if (m_acceptThread.joinable())
     {
         m_acceptThread.join();
@@ -209,6 +213,12 @@ void Server::userInputHandler()
     {
         std::cout << ANSI_COLOR_COMMON << "Enter command to send to clients (or '/quit' to exit): " << ANSI_COLOR_RESET;
         std::getline(std::cin, input);
+
+        if (!std::cin.good() || !m_running)
+        {
+            m_running = false;
+            break;
+        }
 
         if (input == "/quit")
         {

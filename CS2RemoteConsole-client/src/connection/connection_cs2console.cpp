@@ -1,10 +1,8 @@
-﻿#include "connection_cs2console.h"
+#include "connection_cs2console.h"
 #include "spdlog/spdlog.h"
 #include "../config.h"
 #include <chrono>
 #include <thread>
-
-#pragma once
 
 std::atomic<bool> listeningCS2(false);
 std::atomic<bool> cs2ConsoleConnected(false);
@@ -60,7 +58,10 @@ void cs2ConsoleConnectorLoop()
             else
             {
                 spdlog::error("[CS2ConsoleConnection] Failed to connect to CS2 console. Retrying in {} seconds...", reconnect_delay / 1000);
-                std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_delay));
+                for (int i = 0; i < reconnect_delay / 100 && running; ++i)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
                 continue;
             }
         }
@@ -147,6 +148,9 @@ void cleanupCS2Console()
     listeningCS2 = false;
     cs2ConsoleConnected = false;
 
+    // Disconnect first to interrupt any blocking connect() calls
+    vconsole.disconnect();
+
     if (cs2ListenerThread.joinable())
     {
         cs2ListenerThread.join();
@@ -155,8 +159,6 @@ void cleanupCS2Console()
     {
         cs2ConnectorThread.join();
     }
-
-    vconsole.disconnect();
 }
 
 void initializeCS2Connection()
