@@ -3,6 +3,8 @@ name: Build CS2RemoteConsole
 on:
   push:
     branches: [ master ]
+    tags:
+      - 'v*'
     paths:
       - 'libvconsole/**'
       - 'CS2RemoteConsole-client/**'
@@ -135,3 +137,30 @@ jobs:
         with:
           name: CS2RemoteConsole-server-${{ matrix.os_name }}
           path: artifact-server
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release archives
+        run: |
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            zip -r "../${name}.zip" "$dir"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.zip"
+          generate_release_notes: true
