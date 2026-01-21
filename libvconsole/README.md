@@ -9,9 +9,6 @@ libvconsole is a static C++ library that implements the VConsole2 Protocol used 
 - Supported send message types: CMND (TODO investigate: VCFS)
 - Callback system for handling incoming messages
 
-## Limitations
-- Windows-only for now. Sorry!
-
 ## Usage
 
 ```cpp
@@ -38,20 +35,21 @@ int main() {
 
 ## Building
 
-To build libvconsole, you'll need a C++11 compatible compiler. The library has been tested with MSVC, but should work with other compilers as well.
+Requires a C++17 compatible compiler.
 
-### Windows (MSVC)
+### CMake (Recommended)
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+### Visual Studio (Windows)
 
 1. Open the libvconsole.vcxproj file in Visual Studio
 2. Select your desired configuration (Debug/Release) and platform (x86/x64)
 3. Build the project
-
-### Other Platforms
-
-1. Compile the source files in the `src` directory
-2. Link against the necessary system libraries (e.g., ws2_32 on Windows)
-
-No Makefiles are provided, so you'll need to set up your own build process if not using MSVC.
 
 ## License
 
