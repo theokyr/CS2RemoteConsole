@@ -10,7 +10,8 @@ CS2RemoteConsole is a C++ utility for remotely interacting with Counter-Strike 2
 - Connect and receive commands from a remote control server
 - Display console output with channel-based coloring
 - Configurable settings via INI file
-- Cross-platform remote server (Windows and Linux)
+- Cross-platform support (Windows and Linux) for both client and server
+- CMake build system for cross-platform builds
 - Text-based User Interface for easy interaction
 
 ## Disclaimer
@@ -22,43 +23,45 @@ for educational and development purposes only and should only be used in `-tools
 
 ### Client
 
-- Windows OS
+- Windows or Linux OS
 - Counter-Strike 2 running in `-tools` mode
 - C++ compiler with C++17 support
-- Winsock2 library
-- [PDCursesMod](https://github.com/Bill-Gray/PDCursesMod) library
+- CMake 3.14+
+- [PDCursesMod](https://github.com/Bill-Gray/PDCursesMod) (Windows) or ncurses (Linux)
 - [spdlog](https://github.com/gabime/spdlog) library
 
 ### Server
 
 - Windows or Linux OS
 - C++ compiler with C++11 support
-- Winsock2 library (Windows only)
+- CMake 3.14+
 
 ## Building
 
-### Client (Windows Only)
+### CMake (Recommended)
+
+Build both client and server:
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+To build only the client or server:
+
+```bash
+cmake .. -DBUILD_CLIENT=ON -DBUILD_SERVER=OFF  # Client only
+cmake .. -DBUILD_CLIENT=OFF -DBUILD_SERVER=ON  # Server only
+```
+
+### Visual Studio (Windows)
 
 1. Open the project in Visual Studio
 2. Ensure all required libraries are properly linked
 3. Build the solution
 
-### Server
-
-#### Windows
-
-1. Open the server project in Visual Studio
-2. Build the solution
-
-#### Linux
-
-1. Navigate to the server directory
-2. Run the following command:
-   ```
-   g++ -std=c++11 -pthread main.cpp -o server
-   ```
-
-#### Docker
+### Docker (Server)
 
 1. Ensure Docker and Docker Compose are installed
 2. Navigate to the `docker` directory
@@ -74,6 +77,7 @@ Edit `config.ini` to customize:
 - `cs2_console_ip`: IP address of the CS2 console (default: 127.0.0.1)
 - `cs2_console_port`: Port number of the CS2 console (default: 29000)
 - `cs2_console_reconnect_delay`: Reconnection delay in milliseconds (default: 5000)
+- `remote_server_enabled`: Enable or disable remote server connection (default: 1)
 - `remote_server_ip`: IP address of the remote control server (default: 127.0.0.1)
 - `remote_server_port`: Port number of the remote control server (default: 42069)
 - `remote_server_reconnect_delay`: Remote server reconnection delay in milliseconds (default: 5000)
